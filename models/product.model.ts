@@ -12,6 +12,10 @@ const Product = sequelize.define("Product", {
     category_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references:{
+          model: "categories",
+          key: "category_id"
+        }
     },
     product_title: {
       type: DataTypes.STRING(255),
@@ -19,7 +23,6 @@ const Product = sequelize.define("Product", {
     },
     image_url: {
       type: DataTypes.TEXT('long'),
-      allowNull: true,
     },
     price_unit: {
         type: DataTypes.INTEGER,
@@ -28,12 +31,6 @@ const Product = sequelize.define("Product", {
     quantity: {
         type: DataTypes.INTEGER,
         allowNull: false,
-    },
-    created_at: {
-        type: DataTypes.DATE,
-    },
-    updated_at: {
-        type: DataTypes.DATE,
     },
     deleted: {
         type: DataTypes.BOOLEAN,

@@ -9,6 +9,14 @@ const User = sequelize.define("User", {
       primaryKey: true,
       autoIncrement: true
     },
+    credential_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "credentials",
+        key: "credential_id"
+      }
+    },
     first_name: {
       type: DataTypes.STRING(20),
       allowNull: false,
@@ -28,12 +36,6 @@ const User = sequelize.define("User", {
     phone: {
       type: DataTypes.STRING(15),
       allowNull: false,
-    },
-    created_at: {
-        type: DataTypes.DATE,
-    },
-    updated_at: {
-        type: DataTypes.DATE,
     },
     deleted: {
         type: DataTypes.BOOLEAN,

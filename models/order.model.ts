@@ -9,9 +9,13 @@ const Order = sequelize.define("Order", {
       primaryKey: true,
       autoIncrement: true
     },
-    card_id: {
+    cart_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+            model: "carts",
+            key: "cart_id",
+        }
     },
     order_desc: {
       type: DataTypes.STRING(300),
@@ -22,12 +26,6 @@ const Order = sequelize.define("Order", {
     },
     order_fee: {
         type: DataTypes.INTEGER,
-    },
-    created_at: {
-        type: DataTypes.DATE,
-    },
-    updated_at: {
-        type: DataTypes.DATE,
     },
     deleted: {
         type: DataTypes.BOOLEAN,

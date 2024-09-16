@@ -6,21 +6,23 @@ const OrderItem = sequelize.define("OrderItem", {
     order_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      primaryKey: true
+      primaryKey: true,
+      references: {
+        model: "orders",
+        key: "order_id"
+      }
     },
     product_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      primaryKey: true
+      primaryKey: true,
+      references: {
+        model: "products",
+        key: "product_id"
+      }
     },
     ordered_quantity: {
         type: DataTypes.INTEGER,
-    },
-    created_at: {
-        type: DataTypes.DATE,
-    },
-    updated_at: {
-        type: DataTypes.DATE,
     },
     deleted: {
         type: DataTypes.BOOLEAN,

@@ -11,19 +11,17 @@ const Payment = sequelize.define("Payment", {
     },
     order_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      references: {
+        model: "orders",
+        key: "order_id"
+      }
     },
     is_payed: {
         type: DataTypes.INTEGER,
     },
     payment_status: {
         type: DataTypes.STRING(50),
-    },
-    created_at: {
-        type: DataTypes.DATE,
-    },
-    updated_at: {
-        type: DataTypes.DATE,
     },
     deleted: {
         type: DataTypes.BOOLEAN,

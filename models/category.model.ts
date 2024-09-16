@@ -11,7 +11,10 @@ const Category = sequelize.define("Category", {
     },
     sub_category_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        references:{
+          model: "categories",
+          key: "category_id"
+        }
     },
     category_title: {
       type: DataTypes.STRING(255),
@@ -20,12 +23,6 @@ const Category = sequelize.define("Category", {
     image_url: {
       type: DataTypes.STRING(500),
       allowNull: true,
-    },
-    created_at: {
-        type: DataTypes.DATE,
-    },
-    updated_at: {
-        type: DataTypes.DATE,
     },
     deleted: {
         type: DataTypes.BOOLEAN,
