@@ -21,9 +21,7 @@ const VerificationToken = sequelize.define("Verification", {
         allowNull: false,
     },
     expire_date: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true,
-        allowNull: false
+        type: DataTypes.DATE,
     }
 },{
     timestamps: true,
