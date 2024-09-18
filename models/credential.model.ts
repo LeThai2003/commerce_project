@@ -20,7 +20,7 @@ const Credential = sequelize.define("Credential", {
         type: DataTypes.STRING(50),
     },
     is_enabled: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BOOLEAN,
         defaultValue: true,
     }
 }, {

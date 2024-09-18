@@ -7,13 +7,53 @@ import sendMail from "../../helpers/send-mail.helper";
 
 
 //[GET] /user/login
-export const login = (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response) => {
     
     console.log(req.body);
+    const {username, password} = req.body;
 
-    res.json({
-        hello: "Xin chào"
-    });
+    try {
+        const credential = await Credential.findOne({
+            where: {
+                username: username
+            },
+            raw: true
+        });
+
+        // console.log(credential);
+        // console.log(credential["is_enabled"][0]); 
+
+        if (!credential || credential["is_enabled"][0] !== 1) {
+            return res.json({ 
+                code: 400,
+                message: 'Account not enabled or invalid.' 
+            });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, credential["password"]);
+
+        if(!isValidPassword)
+        {
+            return res.json(
+                { 
+                    code: 400,
+                    message: 'Invalid password.' 
+                });
+        }
+
+        const token = jwt.sign({ credential_id: credential["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '24h' });
+
+        res.json({
+            code: 200,
+            token: token
+        });
+
+    } catch (error) {
+        return res.json({ 
+            code: "400",
+            message: 'Error ( login ): ', 
+        });
+    }
 }
 
 //[POST] /user/register
@@ -104,9 +144,18 @@ export const verifyEmail = async (req: Request, res: Response) => {
             message: "Email verified! You can now log in.",
         })
     } catch (error) {
-    res.json({
-        code: 400,
-        message: "Invalid or expired token",
-    });
+        if (error.name === 'TokenExpiredError') {
+            return res.json({ 
+                code: 400,
+                message: "Token expired. Please request a resend of verification email."
+            });
+        }
+        else
+        {
+            res.json({
+                code: 400,
+                message: "Invalid or expired token",
+            });
+        }
     }
 }

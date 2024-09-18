@@ -7,7 +7,9 @@ router.post("/login", controller.login);
 
 router.post("/register", controller.register);
 
-router.get("/verify-email", controller.verifyEmail);
+router.get("/verify-email", controller.verifyEmail); // xác thực email -- login
+
+
 
 
 export const userRoutes : Router = router;
