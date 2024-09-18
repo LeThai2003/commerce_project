@@ -16,6 +16,9 @@ const VerificationToken = sequelize.define("Verification", {
             key: "credential_id"
         }
     },
+    token_type: {
+        type: DataTypes.STRING(30)
+    },
     verif_token: {
         type: DataTypes.STRING(255),
         allowNull: false,

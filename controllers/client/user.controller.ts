@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import User from "../../models/user.model";
 import Credential from "../../models/credential.model";
 import sendMail from "../../helpers/send-mail.helper";
+import VerificationToken from "../../models/verification-token.model";
+import { Op } from "sequelize";
 
 
 //[GET] /user/login
@@ -43,7 +45,19 @@ export const login = async (req: Request, res: Response) => {
 
         const token = jwt.sign({ credential_id: credential["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '24h' });
 
-        res.json({
+        // lưu token lại
+        const verifycation_data = {
+            credential_id: credential["credential_id"],
+            token_type: "login",
+            verif_token: token,
+            expire_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        };
+
+        // console.log(verifycation_data);
+
+        await VerificationToken.create(verifycation_data);
+
+        return res.json({
             code: 200,
             token: token
         });
@@ -107,15 +121,26 @@ export const register = async (req: Request, res: Response) => {
         const verificationToken = jwt.sign({credential_id}, process.env.SECRET_KEY, {expiresIn: "24h"});
         const verificationLink = `http://localhost:3000/user/verify-email?token=${verificationToken}`;
 
-        const content = `<p>Please click the link to verify your email: <a href="${verificationLink}">${verificationLink}</a></p>`;
+        const verifycation_data = {
+            credential_id: user.dataValues.credential_id,
+            token_type: "activation",
+            verif_token: verificationToken,
+            expire_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        };
+
+        console.log(verifycation_data);
+
+        await VerificationToken.create(verifycation_data);
+
+        const content = `<p>Please click the link to verify your email: <a href="${verificationLink}">Xác nhận</a></p>`;
         sendMail(user.dataValues.email, 'Verify Email', content);
 
-        res.json({ 
+        return res.json({ 
             code: 200,
             message: 'Registration successful! Check your email to verify your account.' 
         });
     } catch (error) {
-        res.json({
+        return res.json({
             code: 400,
             message: 'Failed to send verification email.' 
         });
@@ -124,10 +149,31 @@ export const register = async (req: Request, res: Response) => {
 
 //[GET] /user/verify-email
 export const verifyEmail = async (req: Request, res: Response) => {
-
-    const token = req.query.token;
-
     try {
+        const token = req.query.token;
+
+        // xác định token là loại xác minh hay đăng nhập
+        const isActiveToken = await VerificationToken.findOne({
+            where:{
+                verif_token: token,
+                token_type: "activation",
+                expire_date: {
+                    [Op.gt]: new Date(),
+                }
+            },  
+            raw: true
+        });
+
+        if(!isActiveToken)
+        {
+            return res.json({
+                code: 400,
+                message: "Invalid token"
+            })
+        }
+
+        // end xác định token là loại xác minh hay đăng nhập
+
         const decoded = jwt.verify(token, process.env.SECRET_KEY);
         const {credential_id} = decoded;
 
@@ -139,7 +185,15 @@ export const verifyEmail = async (req: Request, res: Response) => {
             }
         })
 
-        res.json({
+        await VerificationToken.update({
+            expire_date: '2023-01-01 00:00:00'
+        }, {
+            where: {
+                verification_token_id: isActiveToken["verification_token_id"]
+            }
+        })
+
+        return res.json({
             code: 200,
             message: "Email verified! You can now log in.",
         })
@@ -152,10 +206,55 @@ export const verifyEmail = async (req: Request, res: Response) => {
         }
         else
         {
-            res.json({
+            return res.json({
                 code: 400,
                 message: "Invalid or expired token",
             });
         }
+    }
+}
+
+//[GET] /user/logout
+export const logout = async (req: Request, res: Response) => {
+    try {
+        // const token = req["cookies"].token;
+
+        // console.log(req.headers)
+
+        if(req.headers['authorization'])
+        {
+            const token = req.headers['authorization'].split(" ")[1];
+
+            console.log(token);
+
+            const vertificationToken_data = await VerificationToken.findOne({
+                where:{
+                    verif_token: token,
+                    token_type: "login"
+                }
+            });
+
+            console.log(vertificationToken_data);
+            
+            await VerificationToken.update({
+                expire_date: '2023-01-01 00:00:00'
+            }, {
+                where:{
+                    verif_token: token,
+                    token_type: "login"
+                }
+            })
+
+            return res.json({
+                code: 200,
+                message: "User logged out.",
+            })
+        }
+
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Error - logout"
+        })
     }
 }

@@ -3,9 +3,9 @@ import { Request, Response, NextFunction } from "express";
 import Credential from "../../models/credential.model";
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
-    if(req.header('Authorization'))
+    if(req.headers['authorization'])
     {
-        const token = req.header('Authorization').split(" ")[1];
+        const token = req.headers['authorization'].split(" ")[1];
 
         const decoded = jwt.verify(token, process.env.SECRET_KEY);
         const {credential_id} = decoded;
