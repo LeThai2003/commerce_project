@@ -11,5 +11,10 @@ router.get("/verify-email", controller.verifyEmail); // xác thực email -- log
 
 router.get("/logout", controller.logout);
 
+router.post("/password/forgot", controller.forgotPassword);
+
+router.get("/password/otp", controller.passwordOtp); // xác thực email -- login
+
+router.post("/password/reset", controller.resetPassword);
 
 export const userRoutes : Router = router;
