@@ -7,32 +7,38 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     {
         const token = req.headers['authorization'].split(" ")[1];
 
-        const decoded = jwt.verify(token, process.env.SECRET_KEY);
-        const {credential_id} = decoded;
+        try {
+            const decoded = jwt.verify(token, process.env.SECRET_KEY);
+            const { credential_id } = decoded;
 
-        const credential = await Credential.findOne({
-            where: {
-                credential_id: credential_id,
-                is_enabled: true,
-            },
-            raw: true,
-        });
+            const credential = await Credential.findOne({
+                where: {
+                    credential_id: credential_id,
+                    is_enabled: true,
+                },
+                raw: true,
+            });
 
-        if(!credential)
-        {
-            return res.json({ 
-                code: 400,
-                message: 'Account not activated or does not exist.' 
+            if (!credential) {
+                return res.json({ 
+                    code: 400,
+                    message: 'Account not activated or does not exist.' // + hết hạn 
+                });
+            }
+
+            req["credential_id"] = credential_id; 
+            next();
+        } catch (error) {
+            return res.json({
+                code: 401,
+                message: 'Invalid token. Access denied.'
             });
         }
-
-        req["credential_id"] = credential_id;
-        next()
     }
     else
     {
         return res.json({ 
-            code: 400,
+            code: 403,
             message: 'Access denied. No token provided.' 
         });
     }

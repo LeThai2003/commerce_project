@@ -45,23 +45,40 @@ export const login = async (req: Request, res: Response) => {
                 });
         }
 
-        const token = jwt.sign({ credential_id: credential["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '24h' });
+        // Tạo access token
+        const accessToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
+
+        // Tạo refresh token
+        const refreshToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
+
+
+        const token = jwt.sign({ credential_id: credential["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '12h' });
 
         // lưu token lại
         const verifycation_data = {
             credential_id: credential["credential_id"],
-            token_type: "login",
-            verif_token: token,
-            expire_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+            token_type: "access",
+            verif_token: accessToken,
+            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
+        };
+
+
+        const refreshTokenData = {
+            credential_id: credential["credential_id"],
+            token_type: "refresh",
+            verif_token: refreshToken,
+            expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         };
 
         // console.log(verifycation_data);
 
         await VerificationToken.create(verifycation_data);
+        await VerificationToken.create(refreshTokenData);
 
         return res.json({
             code: 200,
-            token: token
+            accessToken: accessToken,
+            refreshToken: refreshToken,
         });
 
     } catch (error) {
@@ -216,7 +233,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     }
 }
 
-//[GET] /user/logout
+//[POST] /user/logout
 export const logout = async (req: Request, res: Response) => {
     try {
         // const token = req["cookies"].token;
@@ -225,31 +242,37 @@ export const logout = async (req: Request, res: Response) => {
 
         if(req.headers['authorization'])
         {
-            const token = req.headers['authorization'].split(" ")[1];
+            // access token
+            const accessToken = req.headers['authorization'].split(" ")[1];
 
-            console.log(token);
-
-            const vertificationToken_data = await VerificationToken.findOne({
-                where:{
-                    verif_token: token,
-                    token_type: "login"
-                }
-            });
-
-            console.log(vertificationToken_data);
-            
             await VerificationToken.update({
                 expire_date: '2023-01-01 00:00:00'
             }, {
                 where:{
-                    verif_token: token,
-                    token_type: "login"
+                    verif_token: accessToken,
+                    token_type: "access"
                 }
             })
 
+            // refresh token
+            console.log(req.body);
+
+            const {refreshToken} = req.body;
+
+            if (refreshToken) {
+                await VerificationToken.update({
+                    expire_date: '2023-01-01 00:00:00'
+                }, {
+                    where:{
+                        verif_token: refreshToken,
+                        token_type: "refresh"
+                    }
+                })
+            }
+
             return res.json({
                 code: 200,
-                message: "User logged out.",
+                message: "User logged out successfully.",
             })
         }
 
@@ -428,6 +451,53 @@ export const resetPassword = async (req: Request, res: Response) => {
         return res.json({ 
             code: 400,
             message: "Error in reset password."
+        });
+    }
+}
+
+
+//[POST] /user/refresh-token
+export const refreshToken = async (req: Request, res: Response) => {
+    const {token} = req.body;
+    if(!token)
+    {
+        return res.json({ 
+            code: 401,
+            message: "Refresh token is required."
+        });
+    }
+    try {
+        const tokenData = await VerificationToken.findOne({
+            where: {
+                verif_token: token,
+                token_type: "refresh",
+                expire_date: {
+                    [Op.gt]: new Date(Date.now())
+                }
+            },
+            raw: true
+        });
+
+        if(!tokenData)
+        {
+            return res.json({ 
+                code: 401,
+                message: "Invalid refresh token."
+            });
+        }
+
+        // Tạo accessToken
+        const newAccessToken = jwt.sign({ credential_id: tokenData["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '12h'});
+
+        return res.json({
+            code: 200,
+            token: newAccessToken
+        });
+
+    } catch (error) {
+        return res.json({ 
+            code: 400,
+            message: "Error refreshing token."
         });
     }
 }

@@ -9,12 +9,14 @@ router.post("/register", controller.register);
 
 router.get("/verify-email", controller.verifyEmail); // xác thực email -- login
 
-router.get("/logout", controller.logout);
+router.post("/logout", controller.logout);
 
 router.post("/password/forgot", controller.forgotPassword);
 
 router.get("/password/otp", controller.passwordOtp); // xác thực email -- login
 
 router.post("/password/reset", controller.resetPassword);
+
+router.post("/refresh-token", controller.refreshToken);
 
 export const userRoutes : Router = router;
