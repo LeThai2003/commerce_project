@@ -1,0 +1,21 @@
+doctype html 
+html 
+    head 
+        title Thêm sản phẩm
+    body 
+        h1 Thêm sản phẩm
+
+        form(
+            action="/admin/products/create" method="post" enctype="multipart/form-data"
+        )
+            div(class="form-group")
+                label(for="thumbnail") Ảnh
+                input(
+                    type="file"
+                    class="form-control-file"
+                    id="thumbnail"
+                    name="thumbnail"
+                    accept="image/*"
+                )
+            div(class="form-group")
+                button(type="submit") Gửi
