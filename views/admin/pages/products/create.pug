@@ -17,14 +17,37 @@ html
             //-         name="thumbnail"
             //-         accept="image/*"
             //-     )
+
+            //- div(class="form-group")
+            //-     label(for="description") Mô tả
+            //-     textarea(
+            //-         name="description"
+            //-         id="description"
+            //-         class="form-control"
+            //-         textareaTiny
+            //-     ) 
+
+
             div(class="form-group")
-                label(for="description") Mô tả
-                textarea(
-                    name="description"
-                    id="description"
-                    class="form-control"
-                    textareaTiny
-                ) 
+                label(for="thumbnail") Ảnh 1
+                input(
+                    type="file"
+                    class="form-control-file"
+                    id="thumbnail"
+                    name="thumbnail"
+                    accept="image/*"
+                )
+
+            div(class="form-group")
+                label(for="avatar") Ảnh 2
+                input(
+                    type="file"
+                    class="form-control-file"
+                    id="avatar"
+                    name="avatar"
+                    accept="image/*"
+                )
+
             div(class="form-group")
                 button(type="submit") Gửi
 

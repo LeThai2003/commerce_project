@@ -9,7 +9,7 @@ cloudinary.config({
     api_secret: process.env.CLOUD_SECRET 
 });
 
-export const streamUpload = (buffer) => {
+const streamUpload = (buffer) => {
   return new Promise((resolve, reject) => {
       let stream = cloudinary.uploader.upload_stream(
         (error, result) => {
@@ -25,7 +25,7 @@ export const streamUpload = (buffer) => {
   });
 };
 
-export const upload = async (buffer) => {
+const uploadToCloud = async (buffer) => {
   let result = await streamUpload(buffer);
   return result["url"];
 }
@@ -33,8 +33,8 @@ export const upload = async (buffer) => {
 export const uploadSingle = async (req: Request, res: Response, next: NextFunction) => {
   if(req["file"])
   {
-    const result = await upload(req["file"].buffer);
-    console.log(result);
+    const result = await uploadToCloud(req["file"].buffer);
+    // console.log(result);
     req.body[req["file"]["fieldname"]] = result;
     next();
   }
@@ -43,3 +43,29 @@ export const uploadSingle = async (req: Request, res: Response, next: NextFuncti
       next();
   }
 }
+
+export const uploadFields = async (req: Request, res: Response, next: NextFunction) => {
+  if(req["files"])
+  {
+    for (const key in req["files"]) {
+
+      req.body[key] = [];
+
+      const array = req["files"][key];
+      for (const item of array) {
+        const url = await uploadToCloud(item.buffer);
+        req.body[key].push(url);
+      } 
+
+      // console.log(req.body[key]);
+    }
+
+    next();
+  }
+  else
+  {
+      next();
+  }
+}
+
+

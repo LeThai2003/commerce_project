@@ -26,3 +26,15 @@ export const createPost = (req: Request, res: Response) => {
         code: 200
     })
 }
+
+//[POST] /product/create.js
+export const createPost2 = (req: Request, res: Response) => {
+    
+    // upload nhiều field
+    // console.log(req["files"]);
+    console.log(req.body);
+
+    res.json({
+        code: 200
+    })
+}
