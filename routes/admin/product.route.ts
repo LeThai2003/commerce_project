@@ -13,15 +13,24 @@ router.get("/create", controller.create);
 
 // router.post("/create", upload.single('thumbnail'), uploadSingle, controller.createPost);  // upload single
 
+// router.post(
+//     "/create", 
+//     upload.fields([
+//         { name: 'thumbnail', maxCount: 1 }, 
+//         { name: 'avatar', maxCount: 1 }
+//     ]), 
+//     uploadFields, 
+//     controller.createPost2
+// );  // upload fields
+
 router.post(
     "/create", 
     upload.fields([
-        { name: 'thumbnail', maxCount: 1 }, 
-        { name: 'avatar', maxCount: 1 }
+        { name: 'images_multi', maxCount: 5}
     ]), 
     uploadFields, 
-    controller.createPost2
-);  // upload fields
+    controller.createPost3
+);  // upload input multiple
 
 
 export const productRoute : Router = router;

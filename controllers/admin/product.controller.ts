@@ -38,3 +38,15 @@ export const createPost2 = (req: Request, res: Response) => {
         code: 200
     })
 }
+
+//[POST] /product/create.js
+export const createPost3 = (req: Request, res: Response) => {
+    
+    // console.log(req["files"]);
+
+    console.log(req.body);
+
+    res.json({
+        code: 200
+    })
+}
