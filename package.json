@@ -21,7 +21,8 @@
     "nodemailer": "^6.9.15",
     "pug": "^3.0.3",
     "sequelize": "^6.37.3",
-    "streamifier": "^0.1.1"
+    "streamifier": "^0.1.1",
+    "tinymce": "^7.3.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

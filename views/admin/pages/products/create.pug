@@ -8,14 +8,25 @@ html
         form(
             action="/admin/products/create" method="post" enctype="multipart/form-data"
         )
+            //- div(class="form-group")
+            //-     label(for="thumbnail") Ảnh
+            //-     input(
+            //-         type="file"
+            //-         class="form-control-file"
+            //-         id="thumbnail"
+            //-         name="thumbnail"
+            //-         accept="image/*"
+            //-     )
             div(class="form-group")
-                label(for="thumbnail") Ảnh
-                input(
-                    type="file"
-                    class="form-control-file"
-                    id="thumbnail"
-                    name="thumbnail"
-                    accept="image/*"
-                )
+                label(for="description") Mô tả
+                textarea(
+                    name="description"
+                    id="description"
+                    class="form-control"
+                    textareaTiny
+                ) 
             div(class="form-group")
                 button(type="submit") Gửi
+
+        script(src="/tinymce/tinymce.min.js")
+        script(src="/admin/js/tinymce-config.js") 
