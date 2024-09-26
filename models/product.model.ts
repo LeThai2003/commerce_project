@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../configs/database";
+import slugify from "slugify";
 
 
 const Product = sequelize.define("Product", {
@@ -35,10 +36,27 @@ const Product = sequelize.define("Product", {
     deleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false, // Đặt giá trị mặc định là false
+    },
+    status:{
+      type: DataTypes.STRING,
+      defaultValue: "active",
+      allowNull: false,
+    },
+    slug:{
+      type: DataTypes.STRING,
+      allowNull: true
     }
  },{
     tableName: 'products',
     timestamps: true, // Tự động quản lý createdAt và updatedAt
+  });
+
+
+  Product.beforeCreate((product) => {
+    product["slug"] = slugify(`${product["product_title"]}-${Date.now()}`, {
+      lower: true,
+      strict: true,
+    });
   });
 
 export default Product;

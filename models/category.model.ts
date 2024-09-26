@@ -9,7 +9,7 @@ const Category = sequelize.define("Category", {
       primaryKey: true,
       autoIncrement: true
     },
-    sub_category_id: {
+    parent_category_id: {
         type: DataTypes.INTEGER,
         references:{
           model: "categories",

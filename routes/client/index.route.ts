@@ -7,7 +7,7 @@ import verifyToken from "../../middlewares/client/verifyToken.middleware";
 
 const clientRoutes = (app : Express) : void => {
 
-    app.use("/products", verifyToken, productRoute);
+    app.use("/products", productRoute);
 
     app.use("/user", userRoutes);
 
