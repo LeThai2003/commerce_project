@@ -12,10 +12,10 @@ const app : Express = express();
 const port : (number | string) = process.env.PORT || 3000;
 
 // set public folders
-app.use(express.static('public'))
+app.use(express.static(`${__dirname}/public`))
 
 // views
-app.set("views", "./views");
+app.set("views", `${__dirname}/views`);
 app.set("view engine", "pug");
 
 // parse application/json
