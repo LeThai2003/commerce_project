@@ -1,0 +1,66 @@
+doctype html 
+html 
+    head 
+        title Thêm sản phẩm
+    body 
+        h1 Thêm sản phẩm
+
+        form(
+            action="/admin/products/create" method="post" enctype="multipart/form-data"
+        )
+            //- div(class="form-group")
+            //-     label(for="thumbnail") Ảnh
+            //-     input(
+            //-         type="file"
+            //-         class="form-control-file"
+            //-         id="thumbnail"
+            //-         name="thumbnail"
+            //-         accept="image/*"
+            //-     )
+
+            //- div(class="form-group")
+            //-     label(for="description") Mô tả
+            //-     textarea(
+            //-         name="description"
+            //-         id="description"
+            //-         class="form-control"
+            //-         textareaTiny
+            //-     ) 
+
+
+            //- div(class="form-group")
+            //-     label(for="thumbnail") Ảnh 1
+            //-     input(
+            //-         type="file"
+            //-         class="form-control-file"
+            //-         id="thumbnail"
+            //-         name="thumbnail"
+            //-         accept="image/*"
+            //-     )
+
+            //- div(class="form-group")
+            //-     label(for="avatar") Ảnh 2
+            //-     input(
+            //-         type="file"
+            //-         class="form-control-file"
+            //-         id="avatar"
+            //-         name="avatar"
+            //-         accept="image/*"
+            //-     )
+
+            div(class="form-group")
+                label(for="images_multi") input multiple
+                input(
+                    type="file"
+                    class="form-control-file"
+                    id="images_multi"
+                    name="images_multi"
+                    accept="image/*"
+                    multiple
+                )
+
+            div(class="form-group")
+                button(type="submit") Gửi
+
+        script(src="/tinymce/tinymce.min.js")
+        script(src="/admin/js/tinymce-config.js") 
