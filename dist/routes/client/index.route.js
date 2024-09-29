@@ -6,10 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const product_route_1 = require("./product.route");
 const user_route_1 = require("./user.route");
 const cart_route_1 = require("./cart.route");
+const order_route_1 = require("./order.route");
 const verifyToken_middleware_1 = __importDefault(require("../../middlewares/client/verifyToken.middleware"));
 const clientRoutes = (app) => {
     app.use("/products", product_route_1.productRoute);
     app.use("/user", user_route_1.userRoutes);
     app.use("/cart", verifyToken_middleware_1.default, cart_route_1.cartRoute);
+    app.use("/order", verifyToken_middleware_1.default, order_route_1.orderRoute);
 };
 exports.default = clientRoutes;
