@@ -48,6 +48,9 @@ const Product = database_1.default.define("Product", {
     slug: {
         type: sequelize_1.DataTypes.STRING,
         allowNull: true
+    },
+    discount: {
+        type: sequelize_1.DataTypes.INTEGER,
     }
 }, {
     tableName: 'products',

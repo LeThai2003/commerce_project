@@ -5,34 +5,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const sequelize_1 = require("sequelize");
 const database_1 = __importDefault(require("../configs/database"));
-const Category = database_1.default.define("Category", {
-    category_id: {
+const CartItem = database_1.default.define("OrderItem", {
+    cart_item_id: {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
         primaryKey: true,
         autoIncrement: true
     },
-    sub_category_id: {
+    cart_id: {
         type: sequelize_1.DataTypes.INTEGER,
+        allowNull: false,
         references: {
-            model: "categories",
-            key: "category_id"
+            model: "carts",
+            key: "cart_id"
         }
     },
-    category_title: {
-        type: sequelize_1.DataTypes.STRING(255),
+    product_id: {
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
+        references: {
+            model: "products",
+            key: "product_id"
+        }
     },
-    image_url: {
-        type: sequelize_1.DataTypes.STRING(500),
-        allowNull: true,
+    ordered_quantity: {
+        type: sequelize_1.DataTypes.INTEGER,
     },
-    deleted: {
-        type: sequelize_1.DataTypes.BOOLEAN,
-        defaultValue: false,
-    }
 }, {
-    tableName: 'categories',
+    tableName: 'cart_items',
     timestamps: true,
 });
-exports.default = Category;
+exports.default = CartItem;

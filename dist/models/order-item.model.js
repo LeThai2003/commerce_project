@@ -30,6 +30,12 @@ const OrderItem = database_1.default.define("OrderItem", {
     deleted: {
         type: sequelize_1.DataTypes.BOOLEAN,
         defaultValue: false,
+    },
+    price_unit: {
+        type: sequelize_1.DataTypes.INTEGER,
+    },
+    discount: {
+        type: sequelize_1.DataTypes.INTEGER,
     }
 }, {
     tableName: 'order_items',

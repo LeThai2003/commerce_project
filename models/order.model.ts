@@ -30,7 +30,16 @@ const Order = sequelize.define("Order", {
     deleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false, // Đặt giá trị mặc định là false
-    }
+    },
+    fullName: {
+      type: DataTypes.STRING(100)
+    },
+    phone: {
+      type: DataTypes.STRING(15)
+    },
+    address: {
+      type: DataTypes.STRING(100)
+    },
  },{
     tableName: 'orders',
     timestamps: true, // Tự động quản lý createdAt và updatedAt

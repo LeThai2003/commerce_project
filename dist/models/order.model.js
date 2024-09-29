@@ -33,7 +33,16 @@ const Order = database_1.default.define("Order", {
     deleted: {
         type: sequelize_1.DataTypes.BOOLEAN,
         defaultValue: false,
-    }
+    },
+    fullName: {
+        type: sequelize_1.DataTypes.STRING(100)
+    },
+    phone: {
+        type: sequelize_1.DataTypes.STRING(15)
+    },
+    address: {
+        type: sequelize_1.DataTypes.STRING(100)
+    },
 }, {
     tableName: 'orders',
     timestamps: true,

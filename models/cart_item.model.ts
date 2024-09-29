@@ -2,20 +2,24 @@ import { DataTypes } from "sequelize";
 import sequelize from "../configs/database";
 
 
-const OrderItem = sequelize.define("OrderItem", {
-    order_id: {
+const CartItem = sequelize.define("OrderItem", {
+    cart_item_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    cart_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      primaryKey: true,
       references: {
-        model: "orders",
-        key: "order_id"
+        model: "carts",
+        key: "cart_id"
       }
     },
     product_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      primaryKey: true,
       references: {
         model: "products",
         key: "product_id"
@@ -24,20 +28,10 @@ const OrderItem = sequelize.define("OrderItem", {
     ordered_quantity: {
         type: DataTypes.INTEGER,
     },
-    deleted: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false, // Đặt giá trị mặc định là false
-    },
-    price_unit:{
-      type: DataTypes.INTEGER,
-    },
-    discount:{
-      type: DataTypes.INTEGER,
-    }
  },{
-    tableName: 'order_items',
+    tableName: 'cart_items',
     timestamps: true, // Tự động quản lý createdAt và updatedAt
   });
 
 
-export default OrderItem;
+export default CartItem;

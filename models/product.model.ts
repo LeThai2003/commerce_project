@@ -45,6 +45,9 @@ const Product = sequelize.define("Product", {
     slug:{
       type: DataTypes.STRING,
       allowNull: true
+    },
+    discount:{
+      type: DataTypes.INTEGER,
     }
  },{
     tableName: 'products',

@@ -6,6 +6,7 @@ const upload = multer();
 
 import { uploadSingle } from "../../middlewares/admin/uploadToCloud";
 import { uploadFields } from "../../middlewares/admin/uploadToCloud";
+import { createProductValidation } from "../../validations/admin/products.validate";
 
 const router : Router = express.Router();
 
@@ -23,14 +24,23 @@ router.get("/create", controller.create);
 //     controller.createPost2
 // );  // upload fields
 
+// router.post(
+//     "/create", 
+//     upload.fields([
+//         { name: 'images_multi', maxCount: 5}
+//     ]), 
+//     uploadFields, 
+//     controller.createPost3
+//);  // upload input multiple
+
 router.post(
-    "/create", 
-    upload.fields([
-        { name: 'images_multi', maxCount: 5}
-    ]), 
-    uploadFields, 
-    controller.createPost3
-);  // upload input multiple
+    "/create",
+    upload.single('image_url'), 
+    uploadSingle, 
+    createProductValidation,
+    controller.createPost
+)
+
 
 
 export const productRoute : Router = router;
