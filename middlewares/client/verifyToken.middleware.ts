@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import Credential from "../../models/credential.model";
+import VerificationToken from "../../models/verification-token.model";
+import { Op } from "sequelize";
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     if(req.headers['authorization'])
@@ -24,6 +26,27 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
                     code: 400,
                     message: 'Account not activated or does not exist.' // + hết hạn 
                 });
+            }
+            else    // nếu có nhưng người đó đẵ đăng xuất rồi
+            {
+                const isValidToken = await VerificationToken.findOne({
+                    where:{
+                        token_type: "access",
+                        verif_token: token,
+                        expire_date: {
+                            [Op.gt] : new Date(Date.now())
+                        }
+                    },
+                    raw: true,
+                });
+
+                if(!isValidToken)
+                {
+                    return res.json({
+                        code: 401,
+                        message: 'Invalid token. Access denied.'
+                    });
+                }
             }
 
             req["credential_id"] = credential_id; 

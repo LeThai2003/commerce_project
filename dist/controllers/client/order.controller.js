@@ -14,48 +14,49 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.index = void 0;
 const cart_model_1 = __importDefault(require("../../models/cart.model"));
-const user_model_1 = __importDefault(require("../../models/user.model"));
 const cart_item_model_1 = __importDefault(require("../../models/cart_item.model"));
 const product_model_1 = __importDefault(require("../../models/product.model"));
 const order_item_model_1 = __importDefault(require("../../models/order-item.model"));
 const order_model_1 = __importDefault(require("../../models/order.model"));
+const sequelize_1 = require("sequelize");
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let { fullName, phone, address, note } = req.body["infoCustomer"];
-        const credential_id = req["credential_id"];
-        const user = yield user_model_1.default.findOne({
-            where: {
-                credential_id: credential_id,
-            },
-            raw: true,
-        });
+        const ids = req.body["data_ids"];
+        const cart_id = req.body["cart_id"];
+        console.log(cart_id);
+        console.log(ids);
+        console.log(req.body);
         const cart = yield cart_model_1.default.findOne({
             where: {
-                user_id: user["user_id"],
+                cart_id: cart_id
             },
             raw: true,
         });
         if (!cart) {
-            res.json({
+            return res.json({
                 code: 403,
                 message: "Giỏ hàng không tồn tại!"
             });
         }
         const cartItems = yield cart_item_model_1.default.findAll({
             where: {
-                cart_id: cart["cart_id"],
+                cart_item_id: {
+                    [sequelize_1.Op.in]: ids,
+                }
             },
             raw: true,
         });
+        console.log(cartItems);
         if (cartItems.length === 0) {
-            res.json({
-                code: 40,
+            return res.json({
+                code: 400,
                 message: "Giỏ hàng tróng!"
             });
         }
         let totalPrice = 0;
         const orders = yield order_model_1.default.create({
-            cart_id: cart["cart_id"],
+            cart_id: cart_id,
             order_date: new Date(),
             order_desc: note,
             order_fee: totalPrice,
@@ -96,16 +97,18 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         yield cart_item_model_1.default.destroy({
             where: {
-                cart_id: cart["cart_id"],
+                cart_item_id: {
+                    [sequelize_1.Op.in]: ids,
+                }
             }
         });
-        res.json({
+        return res.json({
             code: 200,
             message: "Đặt hàng thành công!",
         });
     }
     catch (error) {
-        res.json({
+        return res.json({
             code: 400,
             message: "Lỗi đặt hàng"
         });

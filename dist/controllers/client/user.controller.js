@@ -386,6 +386,13 @@ const refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             });
         }
         const newAccessToken = jsonwebtoken_1.default.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
+        const verifycation_data = {
+            credential_id: tokenData["credential_id"],
+            token_type: "access",
+            verif_token: newAccessToken,
+            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
+        };
+        yield verification_token_model_1.default.create(verifycation_data);
         return res.json({
             code: 200,
             token: newAccessToken

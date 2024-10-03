@@ -3,6 +3,7 @@ import { productRoute } from "./product.route";
 import { userRoutes } from "./user.route";
 import { cartRoute } from "./cart.route";
 import { orderRoute } from "./order.route";
+import { verifyPhoneRoute } from "./verify_phone.route";
 
 import verifyToken from "../../middlewares/client/verifyToken.middleware";
 
@@ -16,6 +17,8 @@ const clientRoutes = (app : Express) : void => {
     app.use("/cart", verifyToken, cartRoute);
 
     app.use("/order", verifyToken, orderRoute);
+
+    app.use("/verify-phone", verifyToken, verifyPhoneRoute);
 }
 
 export default clientRoutes;

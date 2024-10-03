@@ -5,34 +5,30 @@ import CartItem from "../../models/cart_item.model";
 import Product from "../../models/product.model";
 import OrderItem from "../../models/order-item.model";
 import Order from "../../models/order.model";
-import { DATE, where } from "sequelize";
+import { DATE, Op, where } from "sequelize";
 
 
-
-//[pOST] /cart/add
+//[POST] /orders
 export const index = async (req: Request, res: Response) => {
     try {
         let {fullName, phone, address, note} = req.body["infoCustomer"];
+        const ids = req.body["data_ids"];
+        const cart_id = req.body["cart_id"];
 
-        const credential_id = req["credential_id"];
-        
-        const user = await User.findOne({
-            where: {
-                credential_id: credential_id,
-            },
-            raw: true,
-        });
+        console.log(cart_id);
+        console.log(ids);
+        console.log(req.body);
 
         const cart = await Cart.findOne({
             where: {
-                user_id: user["user_id"],
+                cart_id: cart_id
             },
             raw: true,
         });
 
         if(!cart)
         {
-            res.json({
+            return res.json({
                 code: 403,
                 message: "Giỏ hàng không tồn tại!"
             })
@@ -40,17 +36,19 @@ export const index = async (req: Request, res: Response) => {
 
         const cartItems = await CartItem.findAll({
             where: {
-                cart_id: cart["cart_id"],
+                cart_item_id: {
+                    [Op.in] : ids,
+                }
             },
             raw: true,
         });
 
-        // console.log(orderItems);
+        console.log(cartItems);
 
         if(cartItems.length === 0)
         {
-            res.json({
-                code: 40,
+            return res.json({
+                code: 400,
                 message: "Giỏ hàng tróng!"
             })
         }
@@ -59,7 +57,7 @@ export const index = async (req: Request, res: Response) => {
 
         // Lưu orders
         const orders = await Order.create({
-            cart_id: cart["cart_id"],
+            cart_id: cart_id,
             order_date: new Date(),
             order_desc: note,
             order_fee: totalPrice,
@@ -96,8 +94,6 @@ export const index = async (req: Request, res: Response) => {
             })
         }
 
-        // console.log(totalPrice);
-
         await Order.update({
             order_fee: totalPrice,
         },{
@@ -109,17 +105,19 @@ export const index = async (req: Request, res: Response) => {
         // xóa mục cartItem
         await CartItem.destroy({
             where:{
-                cart_id: cart["cart_id"],
+                cart_item_id: {
+                    [Op.in] : ids,
+                }
             }
         })
 
 
-        res.json({
+        return res.json({
             code: 200,
             message: "Đặt hàng thành công!",
         })
     } catch (error) {
-        res.json({
+        return res.json({
             code: 400,
             message: "Lỗi đặt hàng"
         })

@@ -37,7 +37,7 @@ const addToCard = (req, res, next) => __awaiter(void 0, void 0, void 0, function
         next();
     }
     catch (error) {
-        res.json({
+        return res.json({
             code: 400,
             message: "Lỗi số lượng thêm vào giỏ hàng"
         });

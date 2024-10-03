@@ -83,13 +83,13 @@ export const index = async (req: Request, res: Response) => {
 
         // console.log(products);
 
-        res.json({
+        return res.json({
             code: 200,
             data: products,
             totalPage: objectPagination["totalPage"]
         });
     } catch (error) {
-        res.json({
+        return res.json({
             code: 400,
             message: error
         })

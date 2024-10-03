@@ -14,6 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const credential_model_1 = __importDefault(require("../../models/credential.model"));
+const verification_token_model_1 = __importDefault(require("../../models/verification-token.model"));
+const sequelize_1 = require("sequelize");
 const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     if (req.headers['authorization']) {
         const token = req.headers['authorization'].split(" ")[1];
@@ -32,6 +34,24 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                     code: 400,
                     message: 'Account not activated or does not exist.'
                 });
+            }
+            else {
+                const isValidToken = yield verification_token_model_1.default.findOne({
+                    where: {
+                        token_type: "access",
+                        verif_token: token,
+                        expire_date: {
+                            [sequelize_1.Op.gt]: new Date(Date.now())
+                        }
+                    },
+                    raw: true,
+                });
+                if (!isValidToken) {
+                    return res.json({
+                        code: 401,
+                        message: 'Invalid token. Access denied.'
+                    });
+                }
             }
             req["credential_id"] = credential_id;
             next();

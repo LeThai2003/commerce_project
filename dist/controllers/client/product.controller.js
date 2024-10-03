@@ -68,14 +68,14 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             offset: objectPagination["offset"],
             raw: true,
         });
-        res.json({
+        return res.json({
             code: 200,
             data: products,
             totalPage: objectPagination["totalPage"]
         });
     }
     catch (error) {
-        res.json({
+        return res.json({
             code: 400,
             message: error
         });

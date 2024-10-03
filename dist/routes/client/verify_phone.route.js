@@ -26,13 +26,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cartRoute = void 0;
+exports.verifyPhoneRoute = void 0;
 const express_1 = __importDefault(require("express"));
-const controller = __importStar(require("../../controllers/client/cart.controller"));
-const addToCart_middleware_1 = __importDefault(require("../../middlewares/client/addToCart.middleware"));
+const controller = __importStar(require("../../controllers/client/verify_phone.controller"));
 const router = express_1.default.Router();
-router.get("/", controller.index);
-router.post("/add", addToCart_middleware_1.default, controller.add);
-router.post("/update-quantity", controller.updateQuantity);
-router.delete("/deleteItem/:cart_item_id", controller.deleteItem);
-exports.cartRoute = router;
+router.post("/sendOTP", controller.sendOTP);
+router.post("/verifyOTP", controller.verifyOTP);
+exports.verifyPhoneRoute = router;

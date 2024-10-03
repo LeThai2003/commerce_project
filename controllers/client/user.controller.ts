@@ -489,6 +489,16 @@ export const refreshToken = async (req: Request, res: Response) => {
         // Tạo accessToken
         const newAccessToken = jwt.sign({ credential_id: tokenData["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '12h'});
 
+        // lưu token lại
+        const verifycation_data = {
+            credential_id: tokenData["credential_id"],
+            token_type: "access",
+            verif_token: newAccessToken,
+            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
+        };
+
+        await VerificationToken.create(verifycation_data);
+
         return res.json({
             code: 200,
             token: newAccessToken

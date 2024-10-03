@@ -30,7 +30,7 @@ const addToCard = async (req: Request, res: Response, next: NextFunction) => {
 
         next();
     } catch (error) {
-        res.json({
+        return res.json({
             code: 400,
             message: "Lỗi số lượng thêm vào giỏ hàng"
         })
