@@ -3,6 +3,8 @@ import Product from "../../models/product.model";
 import { Op } from "sequelize";
 import { convertToSlug } from "../../helpers/convert-to-slug.helper";
 import { paginationHelper } from "../../helpers/pagination.helper";
+import User from "../../models/user.model";
+import Wishlist from "../../models/wishlist.model";
 
 
 //[GET] /product/index.js
@@ -92,6 +94,66 @@ export const index = async (req: Request, res: Response) => {
         return res.json({
             code: 400,
             message: error
+        })
+    }
+}
+
+//[POST] /products/like/:type/:productId
+export const like = async (req: Request, res: Response) => {
+    try {
+        const {productId} = req.params;
+        const credential_id = req["credential_id"];
+        const isLike = req.params["type"];
+
+        let user = res.locals.user;
+
+        if(!user)
+        {
+            user = await User.findOne({
+                where: {
+                    credential_id: credential_id
+                },
+                raw: true
+            });    
+        }
+        
+        if(isLike === "yes")
+        {
+            const existRecord = await Wishlist.findOne({
+                where:{
+                    user_id: user["user_id"],
+                    product_id: parseInt(productId)
+                },
+                raw: true
+            });
+
+            if(!existRecord)
+            {
+                await Wishlist.create({
+                    user_id: user["user_id"],
+                    product_id: parseInt(productId),
+                    like_date: new Date(Date.now())
+                })
+            }
+        }
+        else
+        {
+            await Wishlist.destroy({
+                where: {
+                    user_id: user["user_id"],
+                    product_id: parseInt(productId)
+                }
+            })
+        }
+
+        return res.json({
+            code: 200,
+            message: "Thành công!"
+        })
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Thất bại " + error
         })
     }
 }

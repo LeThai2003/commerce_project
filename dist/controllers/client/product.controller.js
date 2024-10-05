@@ -12,11 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.index = void 0;
+exports.like = exports.index = void 0;
 const product_model_1 = __importDefault(require("../../models/product.model"));
 const sequelize_1 = require("sequelize");
 const convert_to_slug_helper_1 = require("../../helpers/convert-to-slug.helper");
 const pagination_helper_1 = require("../../helpers/pagination.helper");
+const user_model_1 = __importDefault(require("../../models/user.model"));
+const wishlist_model_1 = __importDefault(require("../../models/wishlist.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log(req.query);
@@ -82,3 +84,54 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.index = index;
+const like = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { productId } = req.params;
+        const credential_id = req["credential_id"];
+        const isLike = req.params["type"];
+        let user = res.locals.user;
+        if (!user) {
+            user = yield user_model_1.default.findOne({
+                where: {
+                    credential_id: credential_id
+                },
+                raw: true
+            });
+        }
+        if (isLike === "yes") {
+            const existRecord = yield wishlist_model_1.default.findOne({
+                where: {
+                    user_id: user["user_id"],
+                    product_id: parseInt(productId)
+                },
+                raw: true
+            });
+            if (!existRecord) {
+                yield wishlist_model_1.default.create({
+                    user_id: user["user_id"],
+                    product_id: parseInt(productId),
+                    like_date: new Date(Date.now())
+                });
+            }
+        }
+        else {
+            yield wishlist_model_1.default.destroy({
+                where: {
+                    user_id: user["user_id"],
+                    product_id: parseInt(productId)
+                }
+            });
+        }
+        return res.json({
+            code: 200,
+            message: "Thành công!"
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Thất bại " + error
+        });
+    }
+});
+exports.like = like;

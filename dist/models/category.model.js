@@ -12,7 +12,7 @@ const Category = database_1.default.define("Category", {
         primaryKey: true,
         autoIncrement: true
     },
-    sub_category_id: {
+    parent_category_id: {
         type: sequelize_1.DataTypes.INTEGER,
         references: {
             model: "categories",

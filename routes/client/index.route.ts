@@ -19,6 +19,7 @@ const clientRoutes = (app : Express) : void => {
     app.use("/order", verifyToken, orderRoute);
 
     app.use("/verify-phone", verifyToken, verifyPhoneRoute);
+
 }
 
 export default clientRoutes;

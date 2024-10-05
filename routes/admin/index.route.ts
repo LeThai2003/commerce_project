@@ -1,6 +1,7 @@
 import { Express } from "express";
 import { productRoute } from "./product.route";
 import { uploadRoute } from "./upload.route";
+import { categoryRoute } from "./category.route";
 
 
 const adminRoutes = (app : Express) : void => {
@@ -10,6 +11,8 @@ const adminRoutes = (app : Express) : void => {
     app.use(`${path}/products`, productRoute);
 
     app.use(`${path}/upload`, uploadRoute);
+
+    app.use(`${path}/categories`, categoryRoute);
 
 }
 
