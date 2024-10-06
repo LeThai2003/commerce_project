@@ -4,12 +4,12 @@ exports.index = void 0;
 const index = (req, res) => {
     try {
         console.log(req.body);
-        res.json({
+        return res.json({
             "location": req.body["file"]
         });
     }
     catch (error) {
-        console.log(error);
+        return (console.log(error));
     }
 };
 exports.index = index;

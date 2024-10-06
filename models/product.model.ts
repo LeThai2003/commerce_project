@@ -22,8 +22,13 @@ const Product = sequelize.define("Product", {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    product_desc: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+    },
     image_url: {
       type: DataTypes.TEXT('long'),
+      allowNull: true
     },
     price_unit: {
         type: DataTypes.INTEGER,
@@ -48,6 +53,7 @@ const Product = sequelize.define("Product", {
     },
     discount:{
       type: DataTypes.INTEGER,
+      allowNull: true
     }
  },{
     tableName: 'products',

@@ -33,14 +33,35 @@ router.get("/create", controller.create);
 //     controller.createPost3
 //);  // upload input multiple
 
+
+router.get("/create", controller.create);
+
 router.post(
     "/create",
-    upload.single('image_url'), 
-    uploadSingle, 
+    // upload.single('image_url'), 
+    // uploadSingle, 
+    upload.fields([
+        { name: 'image_url', maxCount: 5}
+    ]), 
+    uploadFields, 
     createProductValidation,
     controller.createPost
 )
 
+router.get("/edit/:product_id", controller.edit);
+
+router.patch(
+    "/edit/:product_id",
+    // upload.single('image_url'), 
+    // uploadSingle,
+    upload.fields([
+        { name: 'images_multi', maxCount: 5}
+    ]),
+    uploadFields, 
+    controller.editPost
+)
+
+router.delete("/delete/:product_id", controller.del);
 
 
 export const productRoute : Router = router;

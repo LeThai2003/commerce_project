@@ -35,5 +35,13 @@ const uploadToCloud_1 = require("../../middlewares/admin/uploadToCloud");
 const products_validate_1 = require("../../validations/admin/products.validate");
 const router = express_1.default.Router();
 router.get("/create", controller.create);
-router.post("/create", upload.single('image_url'), uploadToCloud_1.uploadSingle, products_validate_1.createProductValidation, controller.createPost);
+router.get("/create", controller.create);
+router.post("/create", upload.fields([
+    { name: 'image_url', maxCount: 5 }
+]), uploadToCloud_1.uploadFields, products_validate_1.createProductValidation, controller.createPost);
+router.get("/edit/:product_id", controller.edit);
+router.patch("/edit/:product_id", upload.fields([
+    { name: 'images_multi', maxCount: 5 }
+]), uploadToCloud_1.uploadFields, controller.editPost);
+router.delete("/delete/:product_id", controller.del);
 exports.productRoute = router;

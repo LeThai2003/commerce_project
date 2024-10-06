@@ -25,8 +25,13 @@ const Product = database_1.default.define("Product", {
         type: sequelize_1.DataTypes.STRING(255),
         allowNull: false,
     },
+    product_desc: {
+        type: sequelize_1.DataTypes.TEXT('long'),
+        allowNull: true,
+    },
     image_url: {
         type: sequelize_1.DataTypes.TEXT('long'),
+        allowNull: true
     },
     price_unit: {
         type: sequelize_1.DataTypes.INTEGER,
@@ -51,6 +56,7 @@ const Product = database_1.default.define("Product", {
     },
     discount: {
         type: sequelize_1.DataTypes.INTEGER,
+        allowNull: true
     }
 }, {
     tableName: 'products',

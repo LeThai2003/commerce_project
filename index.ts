@@ -1,6 +1,7 @@
 import express, {Express, Request, Response} from "express";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
+import methodOverride from "method-override";
 
 dotenv.config();
 
@@ -17,6 +18,9 @@ app.use(express.static(`${__dirname}/public`))
 // views
 app.set("views", `${__dirname}/views`);
 app.set("view engine", "pug");
+
+// override with POST having ?_method=DELETE
+app.use(methodOverride('_method'))
 
 // parse application/json
 app.use(bodyParser.json());

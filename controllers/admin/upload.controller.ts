@@ -1,13 +1,13 @@
 import { Express, Request, Response } from "express";
 
-//[GET] /admin/upload
+//[POST] /admin/upload
 export const index = (req: Request, res: Response) => {
     try {
         console.log(req.body);
-        res.json({
+        return res.json({
             "location": req.body["file"]
         });
     } catch (error) {
-        console.log(error)
+        return(console.log(error))
     }
 }
