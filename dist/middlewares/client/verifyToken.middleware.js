@@ -16,6 +16,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const credential_model_1 = __importDefault(require("../../models/credential.model"));
 const verification_token_model_1 = __importDefault(require("../../models/verification-token.model"));
 const sequelize_1 = require("sequelize");
+const user_model_1 = __importDefault(require("../../models/user.model"));
 const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     if (req.headers['authorization']) {
         const token = req.headers['authorization'].split(" ")[1];
@@ -54,6 +55,13 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 }
             }
             req["credential_id"] = credential_id;
+            const user = yield user_model_1.default.findOne({
+                where: {
+                    credential_id: credential["credential_id"]
+                },
+                raw: true
+            });
+            res.locals.user = user;
             next();
         }
         catch (error) {

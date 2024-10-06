@@ -75,15 +75,6 @@ export const login = async (req: Request, res: Response) => {
         await VerificationToken.create(verifycation_data);
         await VerificationToken.create(refreshTokenData);
 
-        const user = await User.findOne({
-            where: {
-                credential_id: credential["credential_id"]
-            },
-            raw: true
-        });
-
-        res.locals.user = user;
-
         return res.json({
             code: 200,
             accessToken: accessToken,
@@ -127,7 +118,7 @@ export const register = async (req: Request, res: Response) => {
         const data_credential = {
             username: username,
             password: hashPassword,
-            role: "user"
+            role_id: 12
         };
 
         const credential = await Credential.create(data_credential);

@@ -16,8 +16,13 @@ const Credential = sequelize.define("Credential", {
         type: DataTypes.STRING(100),
         allowNull: false
     },
-    role:{
-        type: DataTypes.STRING(50),
+    role_id:{
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references:{
+            model: "roles",
+            key: "role_id"
+        }
     },
     is_enabled: {
         type: DataTypes.BOOLEAN,

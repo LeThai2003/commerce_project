@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import Credential from "../../models/credential.model";
 import VerificationToken from "../../models/verification-token.model";
 import { Op } from "sequelize";
+import User from "../../models/user.model";
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     if(req.headers['authorization'])
@@ -50,6 +51,16 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             }
 
             req["credential_id"] = credential_id; 
+
+            const user = await User.findOne({
+                where: {
+                    credential_id: credential["credential_id"]
+                },
+                raw: true
+            });
+
+            res.locals.user = user;
+            
             next();
         } catch (error) {
             return res.json({

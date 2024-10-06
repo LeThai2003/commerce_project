@@ -5,35 +5,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const sequelize_1 = require("sequelize");
 const database_1 = __importDefault(require("../configs/database"));
-const Credential = database_1.default.define("Credential", {
-    credential_id: {
-        type: sequelize_1.DataTypes.INTEGER,
-        autoIncrement: true,
-        allowNull: false,
-        primaryKey: true
-    },
-    username: {
-        type: sequelize_1.DataTypes.STRING(100),
-        allowNull: false
-    },
-    password: {
-        type: sequelize_1.DataTypes.STRING(100),
-        allowNull: false
-    },
+const Role = database_1.default.define("Role", {
     role_id: {
         type: sequelize_1.DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
         allowNull: false,
-        references: {
-            model: "roles",
-            key: "role_id"
-        }
     },
-    is_enabled: {
+    title: {
+        type: sequelize_1.DataTypes.STRING(300),
+        allowNull: false
+    },
+    permissions: {
+        type: sequelize_1.DataTypes.TEXT('long'),
+        allowNull: true,
+    },
+    description: {
+        type: sequelize_1.DataTypes.STRING(500),
+        allowNull: true
+    },
+    deleted: {
         type: sequelize_1.DataTypes.BOOLEAN,
         defaultValue: false,
-    }
+    },
 }, {
     timestamps: true,
-    tableName: "credentials"
+    tableName: "roles",
 });
-exports.default = Credential;
+exports.default = Role;

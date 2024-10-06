@@ -61,13 +61,6 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         };
         yield verification_token_model_1.default.create(verifycation_data);
         yield verification_token_model_1.default.create(refreshTokenData);
-        const user = yield user_model_1.default.findOne({
-            where: {
-                credential_id: credential["credential_id"]
-            },
-            raw: true
-        });
-        res.locals.user = user;
         return res.json({
             code: 200,
             accessToken: accessToken,
@@ -102,7 +95,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const data_credential = {
             username: username,
             password: hashPassword,
-            role: "user"
+            role_id: 12
         };
         const credential = yield credential_model_1.default.create(data_credential);
         const credential_id = credential.dataValues.credential_id;
