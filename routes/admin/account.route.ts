@@ -8,7 +8,11 @@ import { uploadSingle } from "../../middlewares/admin/uploadToCloud";
 
 const router : Router = express.Router();
 
-router.post("/", upload.single('file'), uploadSingle, controller.index);
+router.get("/", controller.index);
+
+router.get("/create", controller.getCreate);
+
+router.post("/create", upload.single('image_url'), uploadSingle, controller.createPost);
 
 
 export const accountRoute : Router = router;

@@ -38,3 +38,5 @@ const Admin = sequelize.define("Admin", {
     timestamps: true,
     tableName: "admins"
 })
+
+export default Admin

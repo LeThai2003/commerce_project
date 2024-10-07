@@ -3,7 +3,7 @@ import { Request } from "express";
 export const paginationHelper = (req: Request, countItems: number) => {
     let objectPagination = {
         page: 1,
-        limit: 4,
+        limit: 5,
     }
 
     if(req.query["page"])

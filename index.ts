@@ -2,6 +2,7 @@ import express, {Express, Request, Response} from "express";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import methodOverride from "method-override";
+import cors from "cors"
 
 dotenv.config();
 
@@ -11,6 +12,8 @@ import path from "path";
 
 const app : Express = express();
 const port : (number | string) = process.env.PORT || 3000;
+
+app.use(cors())
 
 // set public folders
 app.use(express.static(`${__dirname}/public`))

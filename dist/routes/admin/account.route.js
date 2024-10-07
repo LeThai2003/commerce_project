@@ -33,5 +33,7 @@ const multer_1 = __importDefault(require("multer"));
 const upload = (0, multer_1.default)();
 const uploadToCloud_1 = require("../../middlewares/admin/uploadToCloud");
 const router = express_1.default.Router();
-router.post("/", upload.single('file'), uploadToCloud_1.uploadSingle, controller.index);
+router.get("/", controller.index);
+router.get("/create", controller.getCreate);
+router.post("/create", upload.single('image_url'), uploadToCloud_1.uploadSingle, controller.createPost);
 exports.accountRoute = router;

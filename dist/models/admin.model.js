@@ -42,3 +42,4 @@ const Admin = database_1.default.define("Admin", {
     timestamps: true,
     tableName: "admins"
 });
+exports.default = Admin;
