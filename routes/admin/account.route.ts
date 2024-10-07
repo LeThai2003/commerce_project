@@ -16,4 +16,6 @@ router.post("/create", upload.single('image_url'), uploadSingle, controller.crea
 
 router.post("/login", controller.login);
 
+router.post("/logout", controller.logout);
+
 export const accountRoute : Router = router;

@@ -7,9 +7,13 @@ import { verifyPhoneRoute } from "./verify_phone.route";
 import { accountRoutes } from "./account.route";
 
 import verifyToken from "../../middlewares/client/verifyToken.middleware";
+import { categoryRoutes } from "./category.route";
 
 
 const clientRoutes = (app: Express): void => {
+
+    app.use("/categories", categoryRoutes);
+    
     app.use("/products", productRoute);
 
     app.use("/user", userRoutes);

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = exports.createPost = exports.getCreate = exports.index = void 0;
+exports.logout = exports.login = exports.createPost = exports.getCreate = exports.index = void 0;
 const roles_model_1 = __importDefault(require("../../models/roles.model"));
 const admin_model_1 = __importDefault(require("../../models/admin.model"));
 const sequelize_1 = require("sequelize");
@@ -24,7 +24,7 @@ const database_1 = __importDefault(require("../../configs/database"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const accounts = yield database_1.default.query(`
-                SELECT * FROM 
+                SELECT admins.first_name, admins.last_name, admins.image_url, admins.phone, admins.email FROM 
                 admins join credentials on admins.credential_id = credentials.credential_id
                     where credentials.is_enabled != 0
             `, {
@@ -104,22 +104,6 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             image_url: image_url || ""
         };
         const admin = yield admin_model_1.default.create(data_admin);
-        const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
-        const refreshToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
-        const verifycation_data = {
-            credential_id: credential_id,
-            token_type: "access",
-            verif_token: accessToken,
-            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
-        };
-        const refreshTokenData = {
-            credential_id: credential_id,
-            token_type: "refresh",
-            verif_token: refreshToken,
-            expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        };
-        yield verification_token_model_1.default.create(verifycation_data);
-        yield verification_token_model_1.default.create(refreshTokenData);
         return res.json({
             code: 200,
             message: "Tạo tài khoản thành công, bạn có thể đăng nhập"
@@ -136,9 +120,46 @@ exports.createPost = createPost;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { username, password } = req.body;
+        const credential = yield credential_model_1.default.findOne({
+            where: {
+                username: username
+            },
+            raw: true
+        });
+        const isValidPassword = yield bcrypt_1.default.compare(password, credential["password"]);
+        if (!isValidPassword) {
+            return res.json({
+                code: 400,
+                message: 'Invalid password.'
+            });
+        }
+        if (!credential || credential["is_enabled"][0] !== 1) {
+            return res.json({
+                code: 400,
+                message: 'Account not enabled or invalid.'
+            });
+        }
+        const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
+        const refreshToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
+        const verifycation_data = {
+            credential_id: credential["credential_id"],
+            token_type: "access",
+            verif_token: accessToken,
+            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
+        };
+        const refreshTokenData = {
+            credential_id: credential["credential_id"],
+            token_type: "refresh",
+            verif_token: refreshToken,
+            expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        };
+        yield verification_token_model_1.default.create(verifycation_data);
+        yield verification_token_model_1.default.create(refreshTokenData);
         return res.json({
             code: 200,
             message: "Đăng nhập thành công",
+            accessToken: accessToken,
+            refreshToken: refreshToken,
         });
     }
     catch (error) {
@@ -149,3 +170,18 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.login = login;
+const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        return res.json({
+            code: 200,
+            message: "Đăng xuất thành công",
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Lỗi đăng xuất tài khoản" + error
+        });
+    }
+});
+exports.logout = logout;

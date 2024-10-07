@@ -65,6 +65,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const objectPagination = (0, pagination_helper_1.paginationHelper)(req, countProducts);
         const products = yield product_model_1.default.findAll({
             where: find,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
             order: sort,
             limit: objectPagination["limit"],
             offset: objectPagination["offset"],

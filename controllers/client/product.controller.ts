@@ -77,6 +77,7 @@ export const index = async (req: Request, res: Response) => {
 
         const products = await Product.findAll({
             where: find,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
             order: sort,
             limit: objectPagination["limit"],
             offset: objectPagination["offset"],

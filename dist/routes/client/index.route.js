@@ -10,7 +10,9 @@ const order_route_1 = require("./order.route");
 const verify_phone_route_1 = require("./verify_phone.route");
 const account_route_1 = require("./account.route");
 const verifyToken_middleware_1 = __importDefault(require("../../middlewares/client/verifyToken.middleware"));
+const category_route_1 = require("./category.route");
 const clientRoutes = (app) => {
+    app.use("/categories", category_route_1.categoryRoutes);
     app.use("/products", product_route_1.productRoute);
     app.use("/user", user_route_1.userRoutes);
     app.use("/cart", verifyToken_middleware_1.default, cart_route_1.cartRoute);

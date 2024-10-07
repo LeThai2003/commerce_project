@@ -13,7 +13,7 @@ export const index = async (req: Request, res: Response) => {
     try {
         const accounts = await sequelize.query(
             `
-                SELECT * FROM 
+                SELECT admins.first_name, admins.last_name, admins.image_url, admins.phone, admins.email FROM 
                 admins join credentials on admins.credential_id = credentials.credential_id
                     where credentials.is_enabled != 0
             `, {
@@ -108,30 +108,6 @@ export const createPost = async (req: Request, res: Response) => {
 
         const admin = await Admin.create(data_admin);
 
-        // Tạo access token
-        const accessToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
-
-        // Tạo refresh token
-        const refreshToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
-
-        // lưu token lại
-        const verifycation_data = {
-            credential_id: credential_id,
-            token_type: "access",
-            verif_token: accessToken,
-            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
-        };
-
-        const refreshTokenData = {
-            credential_id: credential_id,
-            token_type: "refresh",
-            verif_token: refreshToken,
-            expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        };
-
-        await VerificationToken.create(verifycation_data);
-        await VerificationToken.create(refreshTokenData);
-
         return res.json({
             code: 200,
             message: "Tạo tài khoản thành công, bạn có thể đăng nhập"
@@ -150,14 +126,87 @@ export const login = async (req: Request, res: Response) => {
     try {
         const {username, password} = req.body;
 
+        const credential = await Credential.findOne({
+            where: {
+                username: username
+            },
+            raw: true
+        });
+
+        // console.log(credential);
+        // console.log(credential["is_enabled"][0]); 
+
+        const isValidPassword = await bcrypt.compare(password, credential["password"]);
+
+        if(!isValidPassword)
+        {
+            return res.json(
+                { 
+                    code: 400,
+                    message: 'Invalid password.' 
+                });
+        }
+
+        if (!credential || credential["is_enabled"][0] !== 1) {
+            return res.json({ 
+                code: 400,
+                message: 'Account not enabled or invalid.' 
+            });
+        }
+
+
+        // Tạo access token
+        const accessToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
+
+        // Tạo refresh token
+        const refreshToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
+
+        // lưu token lại
+        const verifycation_data = {
+            credential_id: credential["credential_id"],
+            token_type: "access",
+            verif_token: accessToken,
+            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
+        };
+
+        const refreshTokenData = {
+            credential_id: credential["credential_id"],
+            token_type: "refresh",
+            verif_token: refreshToken,
+            expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        };
+
+        await VerificationToken.create(verifycation_data);
+        await VerificationToken.create(refreshTokenData);
+
+
         return res.json({
             code: 200,
             message: "Đăng nhập thành công",
+            accessToken: accessToken,
+            refreshToken: refreshToken,
         });
     } catch (error) {
         return res.json({
             code: 400,
             message: "Lỗi đăng nhập" +error
+        });
+    }
+}
+
+//[PATCH] /admin/accounts/logout
+export const logout = async (req: Request, res: Response) => {
+    try {
+        
+
+        return res.json({
+            code: 200,
+            message: "Đăng xuất thành công",
+        });
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Lỗi đăng xuất tài khoản" +error
         });
     }
 }
