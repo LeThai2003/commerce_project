@@ -8,6 +8,10 @@ const listFolderCopy = [
   {
     sourceDirectory: "public",
     targetDirectory: "dist/public"
+  },
+  {
+    sourceDirectory: "swagger.yaml",
+    targetDirectory: "dist/swagger.yaml"
   }
 ];
 

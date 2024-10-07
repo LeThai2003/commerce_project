@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  title: Swagger
+  version: 1.0.11
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: products
+    description: Product phía người dùng
+paths:
+  /products:
+    get:
+      tags:
+        - products
+      summary: Lấy sản phẩm
+      operationId: getProductUser
+      parameters:
+        - name: searchKey
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Nhập từ tìm kiếm - tìm theo tiêu đề
+        - name: sortKey
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [product_title, price_unit]
+          description: Field để sắp xếp
+        - name: sortValue
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ASC, DESC]
+          description: Sắp xếp tăng || Giảm
+        - name: fromPrice
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Giá trị tìm kiếm tiền từ
+        - name: toPrice
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Giá trị tìm kiếm tiền đến
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Page
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Số lượng sản phẩm mỗi page
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GetProduct'
+                  totalPage:
+                    type: integer
+                    example: 1
+                  pageNow:
+                    type: integer
+                    example: 1
+        "400":
+          description: Lỗi
+
+
+components:
+  schemas:
+    GetProduct:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          example: 6
+        category_id:
+          type: integer
+          example: 11
+        product_title:
+          type: string
+          example: "Điện thoại Samsung Galaxy Z Fold6 5G 12GB/256GB"
+        product_desc:
+          type: string
+          nullable: true
+          example: null
+        image_url:
+          type: string
+          example: "https://cdn.tgdd.vn/Products/Images/42/320721/samsung-galaxy-z-fold6-xam-12-750x500.jpg"
+        price_unit:
+          type: integer
+          example: 42200000
+        quantity:
+          type: integer
+          example: 50
+        slug:
+          type: string
+          example: "dien-thoai-samsung-galaxy-z-fold6"
+        discount:
+          type: integer
+          example: 15
+        newPrice:
+          type: string
+          example: "35870000"
