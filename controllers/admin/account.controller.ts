@@ -197,12 +197,41 @@ export const login = async (req: Request, res: Response) => {
 //[PATCH] /admin/accounts/logout
 export const logout = async (req: Request, res: Response) => {
     try {
-        
-
-        return res.json({
-            code: 200,
-            message: "Đăng xuất thành công",
-        });
+        if(req.headers['authorization'])
+            {
+                // access token
+                const accessToken = req.headers['authorization'].split(" ")[1];
+    
+                await VerificationToken.update({
+                    expire_date: '2023-01-01 00:00:00'
+                }, {
+                    where:{
+                        verif_token: accessToken,
+                        token_type: "access"
+                    }
+                })
+    
+                // refresh token
+                console.log(req.body);
+    
+                const {refreshToken} = req.body;
+    
+                if (refreshToken) {
+                    await VerificationToken.update({
+                        expire_date: '2023-01-01 00:00:00'
+                    }, {
+                        where:{
+                            verif_token: refreshToken,
+                            token_type: "refresh"
+                        }
+                    })
+                }
+    
+                return res.json({
+                    code: 200,
+                    message: "Đăng xuất thành công",
+                });
+            }
     } catch (error) {
         return res.json({
             code: 400,

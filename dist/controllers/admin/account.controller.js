@@ -172,10 +172,33 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.login = login;
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return res.json({
-            code: 200,
-            message: "Đăng xuất thành công",
-        });
+        if (req.headers['authorization']) {
+            const accessToken = req.headers['authorization'].split(" ")[1];
+            yield verification_token_model_1.default.update({
+                expire_date: '2023-01-01 00:00:00'
+            }, {
+                where: {
+                    verif_token: accessToken,
+                    token_type: "access"
+                }
+            });
+            console.log(req.body);
+            const { refreshToken } = req.body;
+            if (refreshToken) {
+                yield verification_token_model_1.default.update({
+                    expire_date: '2023-01-01 00:00:00'
+                }, {
+                    where: {
+                        verif_token: refreshToken,
+                        token_type: "refresh"
+                    }
+                });
+            }
+            return res.json({
+                code: 200,
+                message: "Đăng xuất thành công",
+            });
+        }
     }
     catch (error) {
         return res.json({

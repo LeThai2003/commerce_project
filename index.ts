@@ -2,7 +2,10 @@ import express, {Express, Request, Response} from "express";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import methodOverride from "method-override";
-import cors from "cors"
+import swaggerUi from "swagger-ui-express";
+import cors from "cors";
+import YAML from "yaml";
+import fs from "fs";
 
 dotenv.config();
 
@@ -13,7 +16,12 @@ import path from "path";
 const app : Express = express();
 const port : (number | string) = process.env.PORT || 3000;
 
-app.use(cors())
+app.use(cors());
+
+const file  = fs.readFileSync(path.resolve('swagger.yaml'), 'utf8')
+const swaggerDocument = YAML.parse(file);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // set public folders
 app.use(express.static(`${__dirname}/public`))
