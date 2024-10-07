@@ -31,7 +31,6 @@ app.use(bodyParser.urlencoded({ extended: false }))
 /* New Route to the TinyMCE Node module */
 app.use('/tinymce', express.static(path.join(__dirname, 'node_modules', 'tinymce')));
 
-
 //router
 clientRoutes(app);
 adminRoutes(app);
