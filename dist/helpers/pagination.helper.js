@@ -12,6 +12,12 @@ const paginationHelper = (req, countItems) => {
             objectPagination["page"] = parseInt(pageQuery);
         }
     }
+    if (req.query["limit"]) {
+        const limitQuery = req.query["limit"];
+        if (typeof limitQuery === 'string') {
+            objectPagination["limit"] = parseInt(limitQuery);
+        }
+    }
     objectPagination["offset"] = (objectPagination["page"] - 1) * objectPagination["limit"];
     objectPagination["totalPage"] = Math.ceil(countItems / objectPagination["limit"]);
     return objectPagination;

@@ -83,7 +83,14 @@ export const index = async (req: Request, res: Response) => {
             raw: true,
         });
 
-        // console.log(products);
+        // ---- giá mới ---
+        for (const item of products) {
+            const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
+            item["newPrice"] = newPrice.toFixed(0);
+        }
+        // ----
+
+        console.log(products);
 
         return res.json({
             code: 200,

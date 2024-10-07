@@ -70,6 +70,11 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             offset: objectPagination["offset"],
             raw: true,
         });
+        for (const item of products) {
+            const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
+            item["newPrice"] = newPrice.toFixed(0);
+        }
+        console.log(products);
         return res.json({
             code: 200,
             data: products,

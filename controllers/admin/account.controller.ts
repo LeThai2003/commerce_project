@@ -143,12 +143,7 @@ export const createPost = async (req: Request, res: Response) => {
 //[POST] /admin/accounts/login
 export const login = async (req: Request, res: Response) => {
     try {
-        const accounts = await Admin.findAll({
-            where:{
-                deleted: false,
-            },
-            raw: true
-        })
+        const {username, password} = req.body;
 
         return res.json({
             code: 200,

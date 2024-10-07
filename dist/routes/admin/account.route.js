@@ -36,4 +36,5 @@ const router = express_1.default.Router();
 router.get("/", controller.index);
 router.get("/create", controller.getCreate);
 router.post("/create", upload.single('image_url'), uploadToCloud_1.uploadSingle, controller.createPost);
+router.post("/login", controller.login);
 exports.accountRoute = router;

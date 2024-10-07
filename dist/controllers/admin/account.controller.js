@@ -131,12 +131,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 exports.createPost = createPost;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const accounts = yield admin_model_1.default.findAll({
-            where: {
-                deleted: false,
-            },
-            raw: true
-        });
+        const { username, password } = req.body;
         return res.json({
             code: 200,
             message: "Đăng nhập thành công",
