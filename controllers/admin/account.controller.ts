@@ -84,7 +84,8 @@ export const createPost = async (req: Request, res: Response) => {
         const data_credential = {
             username: email,
             password: hashPassword,
-            role_id: parseInt(role_id)
+            role_id: parseInt(role_id),
+            is_enabled: true
         };
 
         const credential = await Credential.create(data_credential);
@@ -134,6 +135,29 @@ export const createPost = async (req: Request, res: Response) => {
         return res.json({
             code: 400,
             message: "Lỗi tạo tài khoản" +error
+        });
+    }
+}
+
+
+//[POST] /admin/accounts/login
+export const login = async (req: Request, res: Response) => {
+    try {
+        const accounts = await Admin.findAll({
+            where:{
+                deleted: false,
+            },
+            raw: true
+        })
+
+        return res.json({
+            code: 200,
+            message: "Đăng nhập thành công",
+        });
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Lỗi đăng nhập" +error
         });
     }
 }

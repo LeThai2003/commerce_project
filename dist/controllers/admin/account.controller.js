@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createPost = exports.getCreate = exports.index = void 0;
+exports.login = exports.createPost = exports.getCreate = exports.index = void 0;
 const roles_model_1 = __importDefault(require("../../models/roles.model"));
 const admin_model_1 = __importDefault(require("../../models/admin.model"));
 const sequelize_1 = require("sequelize");
@@ -86,7 +86,8 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         const data_credential = {
             username: email,
             password: hashPassword,
-            role_id: parseInt(role_id)
+            role_id: parseInt(role_id),
+            is_enabled: true
         };
         const credential = yield credential_model_1.default.create(data_credential);
         const credential_id = credential.dataValues.credential_id;
@@ -128,3 +129,24 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.createPost = createPost;
+const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const accounts = yield admin_model_1.default.findAll({
+            where: {
+                deleted: false,
+            },
+            raw: true
+        });
+        return res.json({
+            code: 200,
+            message: "Đăng nhập thành công",
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Lỗi đăng nhập" + error
+        });
+    }
+});
+exports.login = login;
