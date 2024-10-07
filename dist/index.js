@@ -18,7 +18,7 @@ const path_1 = __importDefault(require("path"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 app.use((0, cors_1.default)());
-const file = fs_1.default.readFileSync(path_1.default.resolve(`${__dirname}/swagger.yaml`), 'utf8');
+const file = fs_1.default.readFileSync(path_1.default.resolve(`swagger.yaml`), 'utf8');
 const swaggerDocument = yaml_1.default.parse(file);
 app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerDocument));
 app.use(express_1.default.static(`${__dirname}/public`));
