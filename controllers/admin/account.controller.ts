@@ -1,25 +1,30 @@
 import { Request, Response } from "express";
 import Role from "../../models/roles.model";
 import Admin from "../../models/admin.model";
-import { Op } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Credential from "../../models/credential.model";
 import VerificationToken from "../../models/verification-token.model";
+import sequelize from "../../configs/database";
 
 //[GET] /admin/accounts
 export const index = async (req: Request, res: Response) => {
     try {
-        const accounts = await Admin.findAll({
-            where:{
-                deleted: false,
-            },
-            raw: true
-        })
+        const accounts = await sequelize.query(
+            `
+                SELECT * FROM 
+                admins join credentials on admins.credential_id = credentials.credential_id
+                    where credentials.is_enabled != 0
+            `, {
+                raw: true,
+                type: QueryTypes.SELECT,
+          });
 
         return res.json({
             code: 200,
             message: "Lấy danh sách roles",
+            data: accounts
         });
     } catch (error) {
         return res.json({

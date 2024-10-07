@@ -20,17 +20,21 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const credential_model_1 = __importDefault(require("../../models/credential.model"));
 const verification_token_model_1 = __importDefault(require("../../models/verification-token.model"));
+const database_1 = __importDefault(require("../../configs/database"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const accounts = yield admin_model_1.default.findAll({
-            where: {
-                deleted: false,
-            },
-            raw: true
+        const accounts = yield database_1.default.query(`
+                SELECT * FROM 
+                admins join credentials on admins.credential_id = credentials.credential_id
+                    where credentials.is_enabled != 0
+            `, {
+            raw: true,
+            type: sequelize_1.QueryTypes.SELECT,
         });
         return res.json({
             code: 200,
             message: "Lấy danh sách roles",
+            data: accounts
         });
     }
     catch (error) {

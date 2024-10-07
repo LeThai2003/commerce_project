@@ -95,7 +95,8 @@ export const index = async (req: Request, res: Response) => {
         return res.json({
             code: 200,
             data: products,
-            totalPage: objectPagination["totalPage"]
+            totalPage: objectPagination["totalPage"],
+            pageNow: objectPagination["page"]
         });
     } catch (error) {
         return res.json({
