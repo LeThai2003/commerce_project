@@ -21,6 +21,9 @@ app.use((0, cors_1.default)());
 const file = fs_1.default.readFileSync(path_1.default.resolve(`${__dirname}/swagger.yaml`), 'utf8');
 const swaggerDocument = yaml_1.default.parse(file);
 console.log('Swagger file path:', path_1.default.resolve(`${__dirname}/swagger.yaml`));
+app.get('/swagger.yaml', (req, res) => {
+    res.sendFile(path_1.default.join(__dirname, 'swagger.yaml'));
+});
 app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerDocument));
 app.use(express_1.default.static(`${__dirname}/public`));
 app.set("views", `${__dirname}/views`);

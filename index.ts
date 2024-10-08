@@ -23,6 +23,10 @@ const swaggerDocument = YAML.parse(file);
 
 console.log('Swagger file path:', path.resolve(`${__dirname}/swagger.yaml`));
 
+app.get('/swagger.yaml', (req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, 'swagger.yaml'));
+});
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // set public folders
