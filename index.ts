@@ -18,22 +18,22 @@ const port : (number | string) = process.env.PORT || 3000;
 
 app.use(cors());
 
-// const file = fs.readFileSync(path.resolve(`${__dirname}/swagger.yaml`), 'utf8');
-// const swaggerDocument = YAML.parse(file);
+const file = fs.readFileSync(path.resolve(`${__dirname}/swagger.yaml`), 'utf8');
+const swaggerDocument = YAML.parse(file);
 
-// console.log('Swagger file path:', path.resolve(`${__dirname}/swagger.yaml`));
+console.log('Swagger file path:', path.resolve(`${__dirname}/swagger.yaml`));
 
 app.get('/swagger.yaml', (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, 'swagger.yaml'));
 });
 
-// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-const swaggerDocumentUrl = 'https://commerce-project-2-nine.vercel.app/swagger.yaml';
+// const swaggerDocumentUrl = 'https://commerce-project-2-nine.vercel.app/swagger.yaml';
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, {
-  swaggerUrl: swaggerDocumentUrl,
-}));
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, {
+//   swaggerUrl: swaggerDocumentUrl,
+// }));
 
 // set public folders
 app.use(express.static(`${__dirname}/public`))

@@ -29,8 +29,8 @@ export const login = async (req: Request, res: Response) => {
 
         if (!credential || credential["is_enabled"][0] !== 1) {
             return res.json({ 
-                code: 400,
-                message: 'Account not enabled or invalid.' 
+                code: 402,
+                message: 'Tài Khoản không được hoạt động hoặc không hợp lệ' 
             });
         }
 
@@ -40,8 +40,8 @@ export const login = async (req: Request, res: Response) => {
         {
             return res.json(
                 { 
-                    code: 400,
-                    message: 'Invalid password.' 
+                    code: 401,
+                    message: 'Mật khẩu không đúng' 
                 });
         }
 
@@ -236,45 +236,38 @@ export const verifyEmail = async (req: Request, res: Response) => {
 //[POST] /user/logout
 export const logout = async (req: Request, res: Response) => {
     try {
-        // const token = req["cookies"].token;
+        // access token
+        const accessToken = req.headers["accesstoken"];
 
-        // console.log(req.headers)
-
-        if(req.headers['authorization'])
-        {
-            // access token
-            const accessToken = req.headers['authorization'].split(" ")[1];
-
-            await VerificationToken.update({
-                expire_date: '2023-01-01 00:00:00'
-            }, {
-                where:{
-                    verif_token: accessToken,
-                    token_type: "access"
-                }
-            })
-
-            // refresh token
-            console.log(req.body);
-
-            const {refreshToken} = req.body;
-
-            if (refreshToken) {
-                await VerificationToken.update({
-                    expire_date: '2023-01-01 00:00:00'
-                }, {
-                    where:{
-                        verif_token: refreshToken,
-                        token_type: "refresh"
-                    }
-                })
+        await VerificationToken.update({
+            expire_date: '2023-01-01 00:00:00'
+        }, {
+            where:{
+                verif_token: accessToken,
+                token_type: "access"
             }
+        })
 
-            return res.json({
-                code: 200,
-                message: "User logged out successfully.",
-            })
-        }
+        // refresh token
+
+        const refreshToken = req.headers["refreshtoken"];
+
+        await VerificationToken.update({
+            expire_date: '2023-01-01 00:00:00'
+        }, {
+            where:{
+                verif_token: refreshToken,
+                token_type: "refresh"
+            }
+        })
+
+        console.log(accessToken);
+        console.log(refreshToken);
+
+        return res.json({
+            code: 200,
+            message: "User logged out successfully.",
+        })
 
     } catch (error) {
         return res.json({
@@ -451,63 +444,6 @@ export const resetPassword = async (req: Request, res: Response) => {
         return res.json({ 
             code: 400,
             message: "Error in reset password."
-        });
-    }
-}
-
-
-//[POST] /user/refresh-token
-export const refreshToken = async (req: Request, res: Response) => {
-    const {token} = req.body;
-    if(!token)
-    {
-        return res.json({ 
-            code: 401,
-            message: "Refresh token is required."
-        });
-    }
-    try {
-        const tokenData = await VerificationToken.findOne({
-            where: {
-                verif_token: token,
-                token_type: "refresh",
-                expire_date: {
-                    [Op.gt]: new Date(Date.now())
-                }
-            },
-            raw: true
-        });
-
-        if(!tokenData)
-        {
-            return res.json({ 
-                code: 401,
-                message: "Invalid refresh token."
-            });
-        }
-
-        // Tạo accessToken
-        const newAccessToken = jwt.sign({ credential_id: tokenData["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '12h'});
-
-        // lưu token lại
-        const verifycation_data = {
-            credential_id: tokenData["credential_id"],
-            token_type: "access",
-            verif_token: newAccessToken,
-            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
-        };
-
-        await VerificationToken.create(verifycation_data);
-
-        return res.json({
-            code: 200,
-            token: newAccessToken
-        });
-
-    } catch (error) {
-        return res.json({ 
-            code: 400,
-            message: "Error refreshing token."
         });
     }
 }

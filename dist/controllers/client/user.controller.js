@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshToken = exports.resetPassword = exports.passwordOtp = exports.forgotPassword = exports.logout = exports.verifyEmail = exports.register = exports.login = void 0;
+exports.resetPassword = exports.passwordOtp = exports.forgotPassword = exports.logout = exports.verifyEmail = exports.register = exports.login = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_model_1 = __importDefault(require("../../models/user.model"));
@@ -33,15 +33,15 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         if (!credential || credential["is_enabled"][0] !== 1) {
             return res.json({
-                code: 400,
-                message: 'Account not enabled or invalid.'
+                code: 402,
+                message: 'Tài Khoản không được hoạt động hoặc không hợp lệ'
             });
         }
         const isValidPassword = yield bcrypt_1.default.compare(password, credential["password"]);
         if (!isValidPassword) {
             return res.json({
-                code: 400,
-                message: 'Invalid password.'
+                code: 401,
+                message: 'Mật khẩu không đúng'
             });
         }
         const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
@@ -190,33 +190,30 @@ const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 exports.verifyEmail = verifyEmail;
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        if (req.headers['authorization']) {
-            const accessToken = req.headers['authorization'].split(" ")[1];
-            yield verification_token_model_1.default.update({
-                expire_date: '2023-01-01 00:00:00'
-            }, {
-                where: {
-                    verif_token: accessToken,
-                    token_type: "access"
-                }
-            });
-            console.log(req.body);
-            const { refreshToken } = req.body;
-            if (refreshToken) {
-                yield verification_token_model_1.default.update({
-                    expire_date: '2023-01-01 00:00:00'
-                }, {
-                    where: {
-                        verif_token: refreshToken,
-                        token_type: "refresh"
-                    }
-                });
+        const accessToken = req.headers["accesstoken"];
+        yield verification_token_model_1.default.update({
+            expire_date: '2023-01-01 00:00:00'
+        }, {
+            where: {
+                verif_token: accessToken,
+                token_type: "access"
             }
-            return res.json({
-                code: 200,
-                message: "User logged out successfully.",
-            });
-        }
+        });
+        const refreshToken = req.headers["refreshtoken"];
+        yield verification_token_model_1.default.update({
+            expire_date: '2023-01-01 00:00:00'
+        }, {
+            where: {
+                verif_token: refreshToken,
+                token_type: "refresh"
+            }
+        });
+        console.log(accessToken);
+        console.log(refreshToken);
+        return res.json({
+            code: 200,
+            message: "User logged out successfully.",
+        });
     }
     catch (error) {
         return res.json({
@@ -360,49 +357,3 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.resetPassword = resetPassword;
-const refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { token } = req.body;
-    if (!token) {
-        return res.json({
-            code: 401,
-            message: "Refresh token is required."
-        });
-    }
-    try {
-        const tokenData = yield verification_token_model_1.default.findOne({
-            where: {
-                verif_token: token,
-                token_type: "refresh",
-                expire_date: {
-                    [sequelize_1.Op.gt]: new Date(Date.now())
-                }
-            },
-            raw: true
-        });
-        if (!tokenData) {
-            return res.json({
-                code: 401,
-                message: "Invalid refresh token."
-            });
-        }
-        const newAccessToken = jsonwebtoken_1.default.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
-        const verifycation_data = {
-            credential_id: tokenData["credential_id"],
-            token_type: "access",
-            verif_token: newAccessToken,
-            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
-        };
-        yield verification_token_model_1.default.create(verifycation_data);
-        return res.json({
-            code: 200,
-            token: newAccessToken
-        });
-    }
-    catch (error) {
-        return res.json({
-            code: 400,
-            message: "Error refreshing token."
-        });
-    }
-});
-exports.refreshToken = refreshToken;

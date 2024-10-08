@@ -37,5 +37,4 @@ router.post("/logout", controller.logout);
 router.post("/password/forgot", controller.forgotPassword);
 router.get("/password/otp", controller.passwordOtp);
 router.post("/password/reset", controller.resetPassword);
-router.post("/refresh-token", controller.refreshToken);
 exports.userRoutes = router;

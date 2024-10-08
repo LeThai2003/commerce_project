@@ -9,6 +9,8 @@ const body_parser_1 = __importDefault(require("body-parser"));
 const method_override_1 = __importDefault(require("method-override"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const cors_1 = __importDefault(require("cors"));
+const yaml_1 = __importDefault(require("yaml"));
+const fs_1 = __importDefault(require("fs"));
 dotenv_1.default.config();
 const index_route_1 = __importDefault(require("./routes/client/index.route"));
 const index_route_2 = __importDefault(require("./routes/admin/index.route"));
@@ -16,13 +18,13 @@ const path_1 = __importDefault(require("path"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 app.use((0, cors_1.default)());
+const file = fs_1.default.readFileSync(path_1.default.resolve(`${__dirname}/swagger.yaml`), 'utf8');
+const swaggerDocument = yaml_1.default.parse(file);
+console.log('Swagger file path:', path_1.default.resolve(`${__dirname}/swagger.yaml`));
 app.get('/swagger.yaml', (req, res) => {
     res.sendFile(path_1.default.join(__dirname, 'swagger.yaml'));
 });
-const swaggerDocumentUrl = 'https://commerce-project-2-nine.vercel.app/swagger.yaml';
-app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(null, {
-    swaggerUrl: swaggerDocumentUrl,
-}));
+app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerDocument));
 app.use(express_1.default.static(`${__dirname}/public`));
 app.set("views", `${__dirname}/views`);
 app.set("view engine", "pug");
