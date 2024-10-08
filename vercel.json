@@ -11,6 +11,10 @@
       {
           "src": "/(.*)",
           "dest": "dist/index.js"
+      },
+      {
+        "src": "/swagger.yaml",
+        "dest": "dist/swagger.yaml"
       }
   ]
 }
