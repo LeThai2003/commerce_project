@@ -11,22 +11,20 @@ import sequelize from "../../configs/database";
 //[GET] /product/index.js
 export const index = async (req: Request, res: Response) => {
     try {
-        // console.log(req["credential_id"]);
-
         console.log(req.query);
 
         let find = {
             status: "active",
             deleted: false,
-        }
+        };
 
         // sort 
-        const sort: [string, string][] = []; // Use a tuple array for sorting
+        const sort: [string, string][] = [];
 
         if (req.query["sortKey"] && req.query["sortValue"]) {
             const sortKey = req.query["sortKey"] as string;
-
             const sortValue = req.query["sortValue"];
+
             if (typeof sortValue === 'string') {
                 const formattedSortValue = sortValue.toUpperCase();
                 sort.push([sortKey, formattedSortValue]);
@@ -34,11 +32,9 @@ export const index = async (req: Request, res: Response) => {
                 console.error('sortValue is not a string');
             }
         }
-        // end sort
 
         // filter price
-        if(req.query["fromPrice"] && req.query["toPrice"])
-        {
+        if (req.query["fromPrice"] && req.query["toPrice"]) {
             const fromPriceQuery = req.query["fromPrice"];
             const toPriceQuery = req.query["toPrice"];
 
@@ -48,44 +44,31 @@ export const index = async (req: Request, res: Response) => {
 
                 find["price_unit"] = {
                     [Op.and]: [
-                        {[Op.gte]: price1},
-                        {[Op.lte]: price2},
+                        { [Op.gte]: price1 },
+                        { [Op.lte]: price2 },
                     ]
-                }
+                };
             }
         }
-        // end filter price
 
         // search with title
-            if(req.query["searchKey"])
-            {
-                const titleFromSearh = req.query["searchKey"] as string;
-                if(typeof titleFromSearh === "string")
-                {
-                    let title = convertToSlug(titleFromSearh.toLowerCase());
-                    find["slug"] = {[Op.like]: `%${title}%`}
-                }
+        if (req.query["searchKey"]) {
+            const titleFromSearh = req.query["searchKey"] as string;
+            if (typeof titleFromSearh === "string") {
+                let title = convertToSlug(titleFromSearh.toLowerCase());
+                find["slug"] = { [Op.like]: `%${title}%` };
             }
-        // end search with title
+        }
 
-        // pagination
-        const countProducts = await Product.count({
-            where: find
-        });
-
-        const objectPagination = paginationHelper(req, countProducts);
-        // end pagination
-
-        const products = await Product.findAll({
+        // Lấy tất cả sản phẩm trước khi phân trang
+        let products = await Product.findAll({
             where: find,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
             order: sort,
-            limit: objectPagination["limit"],
-            offset: objectPagination["offset"],
             raw: true,
         });
 
-        // ---- giá mới  + đếm số lượng sản phẩm đã bán---
+        // ---- giá mới + đếm số lượng sản phẩm đã bán ---
         for (const item of products) {
             const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
             item["newPrice"] = newPrice.toFixed(0);
@@ -100,54 +83,61 @@ export const index = async (req: Request, res: Response) => {
             `, {
                 type: QueryTypes.SELECT,
                 raw: true
-            })
+            });
 
             item["total_quantity_sold"] = parseInt(countQuantitySale[0]["total_quantity_sold"]) || 0;
         }
-        // ----
 
+        // rate
+        let rate = req.query["rate"] as string;
+        if (rate) {
+            const rateValue = parseFloat(rate);
+    
+            // Tạo một mảng các Promise
+            const productPromises = products.map(async (item) => {
+                const avgRating = await sequelize.query(`
+                    SELECT AVG(star) AS average_rating
+                    FROM rate
+                    WHERE product_id = ${item["product_id"]}
+                `, {
+                    type: QueryTypes.SELECT,
+                    raw: true
+                });
 
-        // // rate
-        // let rate = req.query["rate"] as string;
-        // if(rate) {
-        //     for (const item of products) {
-        //         const avgRating = await sequelize.query(`
-        //             SELECT AVG(star) as average_rating
-        //             FROM rate
-        //             WHERE product_id = ${item["product_id"]}
-        //         `, {
-        //             type: QueryTypes.SELECT,
-        //             raw: true
-        //         });
-        
-        //         const averageRating = parseFloat(avgRating[0]["average_rating"]) || 0;
+                const averageRating = parseFloat(avgRating[0]["average_rating"]) || 0;
+                
+                if (averageRating >= rateValue) {
+                    item["rating"] = averageRating.toFixed(1);
+                    return item; 
+                }
+                
+                return null;
+            });
 
-        //         console.log(averageRating)
-        //         console.log(parseFloat(rate))
-        //         console.log("--------------")
-        
-        //         if (averageRating < parseFloat(rate)) {
-        //             products.splice(products.indexOf(item), 1); 
-        //         } else {
-        //             item["average_rating"] = averageRating.toFixed(1);
-        //         }
-        //     }
-        // }
-        // // end rate
+            // Chờ tất cả các Promise hoàn thành
+            const results = await Promise.all(productPromises);
+            
+            products = results.filter(item => item !== null);
+        }
 
+        // Sau khi đã lọc xong -> phân trang
+        const countProducts = products.length;
+        const objectPagination = paginationHelper(req, countProducts);
 
+        // Áp dụng phân trang
+        const paginatedProducts = products.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
 
-        console.log(products);
+        console.log(paginatedProducts);
 
         return res.json({
             code: 200,
-            data: products,
+            data: paginatedProducts,
             totalPage: objectPagination["totalPage"],
             pageNow: objectPagination["page"]
         });
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: error
         })
     }

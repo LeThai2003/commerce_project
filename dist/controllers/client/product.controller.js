@@ -60,16 +60,10 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 find["slug"] = { [sequelize_1.Op.like]: `%${title}%` };
             }
         }
-        const countProducts = yield product_model_1.default.count({
-            where: find
-        });
-        const objectPagination = (0, pagination_helper_1.paginationHelper)(req, countProducts);
-        const products = yield product_model_1.default.findAll({
+        let products = yield product_model_1.default.findAll({
             where: find,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
             order: sort,
-            limit: objectPagination["limit"],
-            offset: objectPagination["offset"],
             raw: true,
         });
         for (const item of products) {
@@ -88,17 +82,42 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             });
             item["total_quantity_sold"] = parseInt(countQuantitySale[0]["total_quantity_sold"]) || 0;
         }
-        console.log(products);
+        let rate = req.query["rate"];
+        if (rate) {
+            const rateValue = parseFloat(rate);
+            const productPromises = products.map((item) => __awaiter(void 0, void 0, void 0, function* () {
+                const avgRating = yield database_1.default.query(`
+                    SELECT AVG(star) AS average_rating
+                    FROM rate
+                    WHERE product_id = ${item["product_id"]}
+                `, {
+                    type: sequelize_1.QueryTypes.SELECT,
+                    raw: true
+                });
+                const averageRating = parseFloat(avgRating[0]["average_rating"]) || 0;
+                if (averageRating >= rateValue) {
+                    item["rating"] = averageRating.toFixed(1);
+                    return item;
+                }
+                return null;
+            }));
+            const results = yield Promise.all(productPromises);
+            products = results.filter(item => item !== null);
+        }
+        const countProducts = products.length;
+        const objectPagination = (0, pagination_helper_1.paginationHelper)(req, countProducts);
+        const paginatedProducts = products.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
+        console.log(paginatedProducts);
         return res.json({
             code: 200,
-            data: products,
+            data: paginatedProducts,
             totalPage: objectPagination["totalPage"],
             pageNow: objectPagination["page"]
         });
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: error
         });
     }
