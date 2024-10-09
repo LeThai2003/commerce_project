@@ -122,7 +122,7 @@ const add = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             if (cartItem["ordered_quantity"] + ordered_quantity > product["quantity"]) {
                 return res.json({
                     code: 400,
-                    message: `Số lượng đặt hàng không được vượt quá ${product["quantity"]}`
+                    message: `Số lượng đặt hàng không được vượt quá số lượng tồn kho`
                 });
             }
             ;
@@ -150,7 +150,7 @@ const add = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi thêm sản phẩm vào giỏ hàng"
         });
     }
@@ -191,7 +191,7 @@ const updateQuantity = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi cập nhật số lượng sản phẩm trong giỏ hàng"
         });
     }
@@ -213,7 +213,7 @@ const deleteItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi xóa sản phẩm trong giỏ hàng"
         });
     }

@@ -10,19 +10,20 @@ servers:
   - url: http://localhost:3000
 
 
-# ---------------product user ----------
+
 tags:
   - name: products
     description: Sản phẩm phía người dùng
   - name: categories
     description: Danh mục sản phẩm phía người dùng
   - name: users
+
+# ---------------product user ----------
 paths:
   /products:
     get:
       tags:
         - products
-      summary: Lấy sản phẩm
       operationId: getProductUser
       parameters:
         - name: searchKey
@@ -101,7 +102,6 @@ paths:
     patch:
       tags:
         - products
-      summary: Sản phẩm yêu thích (like)
       description: ''
       operationId: likeProduct
       security:
@@ -159,7 +159,6 @@ paths:
     get:
       tags:
         - categories
-      summary: Lấy danh mục sản phẩm
       operationId: getCategoriesUser
       responses:
         "200":
@@ -219,12 +218,45 @@ paths:
                   refreshToken:
                     type: string
                     example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoxMSwiaWF0IjoxNzI4Mzc2NTUwLCJleHAiOjE3Mjg5ODEzNTB9.4xHYy-GYH7KIyUVCoqDRPS5laFlk2jtq7yvflfAqQeM
+        '403':
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 403
+                    message:
+                      type: string
+                      example: Tài khoản bị vô hiệu hóa
+          description: Tài khoản bị vô hiệu hóa
         '401':
-          description: Tài Khoản hoạt động hoặc không hợp lệ
-        '402':
           description: Mật khẩu không đúng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: Mật khẩu không đúng
         '400': 
           description: Login lỗi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: Login lỗi
       
   /user/logout:
     post: 
@@ -239,15 +271,13 @@ paths:
         description: "Access token for authentication"
         required: true
         schema:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoxMSwiaWF0IjoxNzI4Mzc2NTUwLCJleHAiOjE3Mjg0NjI5NTB9.Di-pZAyVdR5ZVxgFkg4w4q4GH9RpGySwV0GSZhUDxrI
+          $ref: '#/components/schemas/AccessToken'
       - name: refreshToken
         in: header
         description: "Refresh token for session management"
         required: true
         schema:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoxMSwiaWF0IjoxNzI4Mzc2NTUwLCJleHAiOjE3Mjg5ODEzNTB9.4xHYy-GYH7KIyUVCoqDRPS5laFlk2jtq7yvflfAqQeM
+          $ref: '#/components/schemas/RefreshToken'
       responses: 
         '200':
           description: "User logged out successfully."
@@ -275,11 +305,601 @@ paths:
                   message:
                     type: string
                     example: "Error - logout"
-        '401':
-          description: Tài Khoản hoạt động hoặc không hợp lệ 
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: Tài Khoản bị vô hiệu hóa hoặc không hợp lệ
+          description: Tài Khoản bị vô hiệu hóa hoặc không hợp lệ
       
+  /user/register:
+    post: 
+      tags: 
+        - users
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "nguyenvanchien"
+                password:
+                  type: string
+                  example: "123456"
+                first_name:
+                  type: string
+                  example: "chien"
+                last_name:
+                  type: string
+                  example: "nguyen van"
+                email:
+                  type: string
+                  format: email
+                  example: "leducthai1008@gmail.com"
+                phone:
+                  type: string
+                  example: "0533055066"
+                  description: "Phone number of the user"
+      responses: 
+        '200':
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Registration successful! Check your email to verify your account
+        '400':
+          description: "Lỗi đăng ký."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: Lỗi đăng ký
+        '409':
+          description: Email đã tồn tại
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 409
+                  message:
+                    type: string
+                    example: Email đã tồn tại
+      
+  /user/verify-email:
+    post: 
+      tags: 
+        - users
+      operationId: verifyEmail
+      parameters:
+        - name: token
+          in: query
+          required: false
+          schema:
+            type: string
+      responses: 
+        '200':
+          description: Xác thực thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Email verified! You can now log in
+        '401':
+          description: Token hết hạn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: REQUEST A RESEND EMAIL || token expired || Invalid token
+
+  /user/password/forgot:
+    post: 
+      tags: 
+        - users
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: leducthai1008@gmail.com    
+      responses: 
+        '200':
+          description: Gửi email thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Email sent successfully! Check your email.
+        '400':
+          description: Lỗi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: Failed forgot password.
+
+  /user/password/otp:
+    post: 
+      tags: 
+        - users
+      operationId: otpPassword
+      parameters:
+        - name: token
+          in: query
+          required: false
+          schema:
+            type: string 
+      responses: 
+        '200':
+          description: Xác thực thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: OTP authentication successful! You can reset your password.
+                  email:
+                    type: string
+                    example: leducthai1008@gmail.com
+        '401':
+          description: Token hết hạn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: REQUEST A RESEND EMAIL || token expired || Invalid token
+  
+  /user/password/reset:
+    post: 
+      tags: 
+        - users
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "leducthai1008@gmail.com"
+                password:
+                  type: string
+                  example: "123"
+                confirmPassword:
+                  type: string
+                  example: "123"
+      responses: 
+        '200':
+          description: reset mật khẩu thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Reset password successfully! You can login now.
+        '401':
+          description: Xác nhận mật khẩu sai
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: Password and confirm password are not the same
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: Err
 
 # ----------- end user --------
+
+
+# ----------- cart --------
+  /cart:
+    get:
+      tags:
+        - carts
+      operationId: cart
+      security:
+        - accessToken: []
+      parameters:
+      - name: accessToken
+        in: header
+        description: "Access token for authentication"
+        required: true
+        schema:
+          $ref: '#/components/schemas/AccessToken'
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  cart_id:
+                    type: integer
+                    example: 1
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GetCart'
+
+        "400":
+          description: Lỗi lấy danh sách sản phẩm
+  
+  /cart/add:
+    post:
+      tags:
+        - carts
+      operationId: Add-to-cart
+      security:
+        - accessToken: []
+      parameters:
+      - name: accessToken
+        in: header
+        description: "Access token for authentication"
+        required: true
+        schema:
+          $ref: '#/components/schemas/AccessToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id:
+                  type: integer
+                  example: 9
+                ordered_quantity:
+                  type: integer
+                  example: 1
+      responses:
+        "200":
+          description: "successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Thêm sản phẩm vào giỏ hàng thành công!"
+        "400":
+          description: "Lỗi."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Số lượng đặt hàng vượt quá!"
+        "500":
+          description: "Lỗi."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Lỗi đặt hàng!"
+  
+  /cart/update-quantity:
+    post:
+      tags:
+        - carts
+      operationId: update_in_cart
+      security:
+        - accessToken: []
+      parameters:
+      - name: accessToken
+        in: header
+        description: "Access token for authentication"
+        required: true
+        schema:
+          $ref: '#/components/schemas/AccessToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cart_id:
+                  type: integer
+                  example: 1
+                product_id:
+                  type: integer
+                  example: 3
+                ordered_quantity:
+                  type: integer
+                  example: 1
+      responses:
+        "200":
+          description: "successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Cập nhật số lượng sản phẩm trong giỏ hàng thành công"
+        "400":
+          description: "Lỗi."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Bạn muốn xóa sản phẩm ?"
+        "500":
+          description: "Lỗi."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: Lỗi cập nhật số lượng sản phẩm trong giỏ hàng
+
+  /cart/deleteItem/{cart_item_id}:
+    post:
+      tags:
+        - carts
+      operationId: update_in_cart
+      security:
+        - accessToken: []
+      parameters:
+      - name: accessToken
+        in: header
+        description: "Access token for authentication"
+        required: true
+        schema:
+          $ref: '#/components/schemas/AccessToken'
+      - name: cart_item_id
+        in: path
+        description: id sản phẩm
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: "successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Xóa sản phẩm trong giỏ hàng thành công
+        "500":
+          description: "Lỗi."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: Lỗi xóa sản phẩm trong giỏ hàng
+
+# ----------- end cart --------
+
+# ----------- order --------
+  /order: 
+    post: 
+      tags: 
+        - order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cart_id:
+                  type: integer
+                  example: 1
+                data_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example: [8, 10]
+                infoCustomer:
+                  type: object
+                  properties:
+                    fullName:
+                      type: string
+                      example: "Nguyen Van Chien"
+                    phone:
+                      type: string
+                      example: "0989217177"
+                    address:
+                      type: string
+                      example: "Đường 5 - Phường C"
+                    note:
+                      type: string
+                      example: ""
+      responses: 
+        "200":
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                      type: string
+                      example: Đặt hàng thành công!
+        '404':
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 404
+                    message:
+                      type: string
+                      example: Giỏ hàng không tồn tại!
+          description: Tài khoản bị vô hiệu hóa
+        '400':
+          description: Giỏ hàng trống
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: Giỏ hàng trống
+        '500': 
+          description: Lỗi đặt hàng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: Lỗi đặt hàng
+
+
+# ----------- end order --------
+
 
 
 components:
@@ -339,6 +959,63 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GetCategory'
+
+    GetCart:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        cart_id:
+          type: integer
+          example: 1
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totalPrice:
+          type: integer
+          example: 102598000  
+
+    CartItem:
+      type: object
+      properties:
+        cart_item_id:
+          type: integer
+          example: 8
+        cart_id:
+          type: integer
+          example: 1
+        product_id:
+          type: integer
+          example: 6
+        ordered_quantity:
+          type: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-10-03T14:37:27.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-10-03T14:37:27.000Z"
+        infoProduct:
+          $ref: '#/components/schemas/GetProduct'
+        newPrice:
+          type: integer
+          example: 35870000
+        totalPriceItem:
+          type: integer
+          example: 35870000
+
+    AccessToken:  
+      type: string
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoxMSwiaWF0IjoxNzI4NDAxNjE5LCJleHAiOjE3Mjg0ODgwMTl9.F6_BhNFGWjmeN5UuJ9vKMmq8CS97sc2Qqk9mLJUEimA
+    
+    RefreshToken:  
+      type: string
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoxMSwiaWF0IjoxNzI4Mzc2NTUwLCJleHAiOjE3Mjg5ODEzNTB9.4xHYy-GYH7KIyUVCoqDRPS5laFlk2jtq7yvflfAqQeM
 
   securitySchemes:
     accessToken:

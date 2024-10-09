@@ -6,6 +6,7 @@ import Product from "../../models/product.model";
 import OrderItem from "../../models/order-item.model";
 import Order from "../../models/order.model";
 import { DATE, Op, where } from "sequelize";
+import Payment from "../../models/payment.model";
 
 
 //[POST] /orders
@@ -29,7 +30,7 @@ export const index = async (req: Request, res: Response) => {
         if(!cart)
         {
             return res.json({
-                code: 403,
+                code: 404,
                 message: "Giỏ hàng không tồn tại!"
             })
         }
@@ -49,7 +50,7 @@ export const index = async (req: Request, res: Response) => {
         {
             return res.json({
                 code: 400,
-                message: "Giỏ hàng tróng!"
+                message: "Giỏ hàng trống!"
             })
         }
         
@@ -112,13 +113,21 @@ export const index = async (req: Request, res: Response) => {
         })
 
 
+        // payment
+        await Payment.create({
+            order_id: orders.dataValues["order_id"],
+            is_payed: 0, // giả sử mặc định là chưa trả
+            payment_status: "Đang xử lý", // pending
+        });
+
+
         return res.json({
             code: 200,
             message: "Đặt hàng thành công!",
         })
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi đặt hàng"
         })
     }

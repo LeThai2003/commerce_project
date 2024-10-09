@@ -32,5 +32,6 @@ const controller = __importStar(require("../../controllers/client/product.contro
 const verifyToken_middleware_1 = __importDefault(require("../../middlewares/client/verifyToken.middleware"));
 const router = express_1.default.Router();
 router.get("/", controller.index);
+router.get("/:productId", controller.detail);
 router.patch("/like/:type/:productId", verifyToken_middleware_1.default, controller.like);
 exports.productRoute = router;

@@ -7,7 +7,11 @@ const router : Router = express.Router();
 
 router.get("/", controller.index);
 
+router.get("/:productId", controller.detail);
+
 router.patch("/like/:type/:productId",verifyToken, controller.like);
+
+
 
 
 export const productRoute : Router = router;

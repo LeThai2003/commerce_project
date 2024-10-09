@@ -1,10 +1,11 @@
 import { Express, Request, Response } from "express";
 import Product from "../../models/product.model";
-import { Op } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import { convertToSlug } from "../../helpers/convert-to-slug.helper";
 import { paginationHelper } from "../../helpers/pagination.helper";
 import User from "../../models/user.model";
 import Wishlist from "../../models/wishlist.model";
+import sequelize from "../../configs/database";
 
 
 //[GET] /product/index.js
@@ -84,12 +85,57 @@ export const index = async (req: Request, res: Response) => {
             raw: true,
         });
 
-        // ---- giá mới ---
+        // ---- giá mới  + đếm số lượng sản phẩm đã bán---
         for (const item of products) {
             const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
             item["newPrice"] = newPrice.toFixed(0);
+
+            const countQuantitySale = await sequelize.query(`
+                SELECT SUM(order_items.ordered_quantity) AS total_quantity_sold
+                FROM orders
+                JOIN payments ON orders.order_id = payments.order_id
+                JOIN order_items ON order_items.order_id = orders.order_id
+                WHERE payments.payment_status = 'Đã giao'
+                AND order_items.product_id = ${item["product_id"]};
+            `, {
+                type: QueryTypes.SELECT,
+                raw: true
+            })
+
+            item["total_quantity_sold"] = parseInt(countQuantitySale[0]["total_quantity_sold"]) || 0;
         }
         // ----
+
+
+        // // rate
+        // let rate = req.query["rate"] as string;
+        // if(rate) {
+        //     for (const item of products) {
+        //         const avgRating = await sequelize.query(`
+        //             SELECT AVG(star) as average_rating
+        //             FROM rate
+        //             WHERE product_id = ${item["product_id"]}
+        //         `, {
+        //             type: QueryTypes.SELECT,
+        //             raw: true
+        //         });
+        
+        //         const averageRating = parseFloat(avgRating[0]["average_rating"]) || 0;
+
+        //         console.log(averageRating)
+        //         console.log(parseFloat(rate))
+        //         console.log("--------------")
+        
+        //         if (averageRating < parseFloat(rate)) {
+        //             products.splice(products.indexOf(item), 1); 
+        //         } else {
+        //             item["average_rating"] = averageRating.toFixed(1);
+        //         }
+        //     }
+        // }
+        // // end rate
+
+
 
         console.log(products);
 
@@ -163,6 +209,56 @@ export const like = async (req: Request, res: Response) => {
         return res.json({
             code: 400,
             message: "Thất bại " + error
+        })
+    }
+}
+
+//[GET] /products/:productId
+export const detail = async (req: Request, res: Response) => {
+    try {
+        const {productId} = req.params;
+        
+        const product = await Product.findOne({
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
+            where: {
+                product_id: productId,
+            },
+            raw: true
+        })
+
+        const countQuantitySold = await sequelize.query(`
+            SELECT SUM(oi.ordered_quantity) AS total_quantity
+            FROM order_items oi
+            JOIN payments pm ON oi.order_id = pm.order_id
+            WHERE oi.product_id = ${product["product_id"]}
+            AND pm.payment_status = 'Đã giao';
+        `, {
+            raw: true,
+            type: QueryTypes.SELECT
+        })
+
+        //  AND pm.is_payed = 1
+
+        const ratingAVG = await sequelize.query(`
+            SELECT AVG(rate.star) as rating 
+            FROM rate
+            WHERE rate.product_id = ${product["product_id"]}
+        `, {
+            raw: true,
+            type: QueryTypes.SELECT
+        })
+
+        return res.json({
+            code: 200,
+            message: "Load dữ liệu chi tiết sản phẩm thành công",
+            data: product,
+            quantityProductSold: parseInt(countQuantitySold[0]["total_quantity"]) || 0,
+            rating: parseFloat(ratingAVG[0]["rating"]) || 0
+        })
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Load dữ liệu chi tiết sản phẩm thất bại " + error
         })
     }
 }

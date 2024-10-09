@@ -19,6 +19,7 @@ const product_model_1 = __importDefault(require("../../models/product.model"));
 const order_item_model_1 = __importDefault(require("../../models/order-item.model"));
 const order_model_1 = __importDefault(require("../../models/order.model"));
 const sequelize_1 = require("sequelize");
+const payment_model_1 = __importDefault(require("../../models/payment.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let { fullName, phone, address, note } = req.body["infoCustomer"];
@@ -35,7 +36,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         if (!cart) {
             return res.json({
-                code: 403,
+                code: 404,
                 message: "Giỏ hàng không tồn tại!"
             });
         }
@@ -51,7 +52,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (cartItems.length === 0) {
             return res.json({
                 code: 400,
-                message: "Giỏ hàng tróng!"
+                message: "Giỏ hàng trống!"
             });
         }
         let totalPrice = 0;
@@ -102,6 +103,11 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 }
             }
         });
+        yield payment_model_1.default.create({
+            order_id: orders.dataValues["order_id"],
+            is_payed: 0,
+            payment_status: "Đang xử lý",
+        });
         return res.json({
             code: 200,
             message: "Đặt hàng thành công!",
@@ -109,7 +115,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi đặt hàng"
         });
     }

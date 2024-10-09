@@ -5,9 +5,10 @@ import { cartRoute } from "./cart.route";
 import { orderRoute } from "./order.route";
 import { verifyPhoneRoute } from "./verify_phone.route";
 import { accountRoutes } from "./account.route";
-
-import verifyToken from "../../middlewares/client/verifyToken.middleware";
 import { categoryRoutes } from "./category.route";
+import { rateRoute } from "./rate.route";
+import verifyToken from "../../middlewares/client/verifyToken.middleware";
+
 
 
 const clientRoutes = (app: Express): void => {
@@ -25,6 +26,8 @@ const clientRoutes = (app: Express): void => {
     app.use("/verify-phone", verifyToken, verifyPhoneRoute);
   
     app.use("/account", verifyToken, accountRoutes);
+
+    app.use("/rate", verifyToken, rateRoute);
   };
 
 export default clientRoutes;

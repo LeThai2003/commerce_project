@@ -10,7 +10,7 @@ import sequelize from "../../configs/database";
 import { emit } from "process";
 
 
-//[GET] /user/login
+//[POST] /user/login
 export const login = async (req: Request, res: Response) => {
     
     console.log(req.body);
@@ -29,8 +29,8 @@ export const login = async (req: Request, res: Response) => {
 
         if (!credential || credential["is_enabled"][0] !== 1) {
             return res.json({ 
-                code: 402,
-                message: 'Tài Khoản không được hoạt động hoặc không hợp lệ' 
+                code: 403,
+                message: 'Tài khoản bị vô hiệu hóa' 
             });
         }
 
@@ -107,7 +107,7 @@ export const register = async (req: Request, res: Response) => {
         if(userExist)
         {
             return res.json({ 
-                code: "400",
+                code: "409",
                 message: 'Email already registered.' 
             });
         }
@@ -166,7 +166,7 @@ export const register = async (req: Request, res: Response) => {
     }    
 }
 
-//[GET] /user/verify-email
+//[POST] /user/verify-email
 export const verifyEmail = async (req: Request, res: Response) => {
     try {
         const token = req.query.token;
@@ -186,7 +186,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
         if(!isActiveToken)
         {
             return res.json({
-                code: 400,
+                code: 401,
                 message: "Invalid token"
             })
         }
@@ -219,14 +219,14 @@ export const verifyEmail = async (req: Request, res: Response) => {
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
             return res.json({ 
-                code: 400,
-                message: "Token expired. Please request a resend of verification email."
+                code: 401,
+                message: "REQUEST A RESEND EMAIL"
             });
         }
         else
         {
             return res.json({
-                code: 400,
+                code: 401,
                 message: "Invalid or expired token",
             });
         }
@@ -330,7 +330,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 }
 
-//[GET] /user/password/otp
+//[POST] /user/password/otp
 export const passwordOtp = async (req: Request, res: Response) => {
     try {
         const token = req.query.token;
@@ -350,7 +350,7 @@ export const passwordOtp = async (req: Request, res: Response) => {
         if(!isActiveToken)
         {
             return res.json({
-                code: 400,
+                code: 401,
                 message: "Invalid token"
             })
         }
@@ -411,7 +411,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         if(password !== comfirmPassword)
         {
             return res.json({ 
-                code: 400,
+                code: 401,
                 message: "Password and confirm password are not the same."
             });
         }

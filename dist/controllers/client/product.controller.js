@@ -12,13 +12,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.like = exports.index = void 0;
+exports.detail = exports.like = exports.index = void 0;
 const product_model_1 = __importDefault(require("../../models/product.model"));
 const sequelize_1 = require("sequelize");
 const convert_to_slug_helper_1 = require("../../helpers/convert-to-slug.helper");
 const pagination_helper_1 = require("../../helpers/pagination.helper");
 const user_model_1 = __importDefault(require("../../models/user.model"));
 const wishlist_model_1 = __importDefault(require("../../models/wishlist.model"));
+const database_1 = __importDefault(require("../../configs/database"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log(req.query);
@@ -74,6 +75,18 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         for (const item of products) {
             const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
             item["newPrice"] = newPrice.toFixed(0);
+            const countQuantitySale = yield database_1.default.query(`
+                SELECT SUM(order_items.ordered_quantity) AS total_quantity_sold
+                FROM orders
+                JOIN payments ON orders.order_id = payments.order_id
+                JOIN order_items ON order_items.order_id = orders.order_id
+                WHERE payments.payment_status = 'Đã giao'
+                AND order_items.product_id = ${item["product_id"]};
+            `, {
+                type: sequelize_1.QueryTypes.SELECT,
+                raw: true
+            });
+            item["total_quantity_sold"] = parseInt(countQuantitySale[0]["total_quantity_sold"]) || 0;
         }
         console.log(products);
         return res.json({
@@ -142,3 +155,47 @@ const like = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.like = like;
+const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { productId } = req.params;
+        const product = yield product_model_1.default.findOne({
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
+            where: {
+                product_id: productId,
+            },
+            raw: true
+        });
+        const countQuantitySold = yield database_1.default.query(`
+            SELECT SUM(oi.ordered_quantity) AS total_quantity
+            FROM order_items oi
+            JOIN payments pm ON oi.order_id = pm.order_id
+            WHERE oi.product_id = ${product["product_id"]}
+            AND pm.payment_status = 'Đã giao';
+        `, {
+            raw: true,
+            type: sequelize_1.QueryTypes.SELECT
+        });
+        const ratingAVG = yield database_1.default.query(`
+            SELECT AVG(rate.star) as rating 
+            FROM rate
+            WHERE rate.product_id = ${product["product_id"]}
+        `, {
+            raw: true,
+            type: sequelize_1.QueryTypes.SELECT
+        });
+        return res.json({
+            code: 200,
+            message: "Load dữ liệu chi tiết sản phẩm thành công",
+            data: product,
+            quantityProductSold: parseInt(countQuantitySold[0]["total_quantity"]) || 0,
+            rating: parseFloat(ratingAVG[0]["rating"]) || 0
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Load dữ liệu chi tiết sản phẩm thất bại " + error
+        });
+    }
+});
+exports.detail = detail;

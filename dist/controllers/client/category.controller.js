@@ -12,9 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.index = void 0;
+exports.getProductCategory = exports.index = void 0;
 const category_model_1 = __importDefault(require("../../models/category.model"));
 const create_tree_helper_1 = require("../../helpers/create-tree.helper");
+const database_1 = __importDefault(require("../../configs/database"));
+const sequelize_1 = require("sequelize");
+const convert_to_slug_helper_1 = require("../../helpers/convert-to-slug.helper");
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const listCategories = yield category_model_1.default.findAll({
@@ -33,9 +36,58 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi load create category"
         });
     }
 });
 exports.index = index;
+const getProductCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const category_id = req.params["category_id"];
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const offset = (page - 1) * limit;
+        const sortKey = req.query.sortKey.toUpperCase() || 'product_title';
+        const sortValue = req.query.sortValue.toUpperCase() || 'ASC';
+        let searchKey = req.query.searchKey || "";
+        searchKey = (0, convert_to_slug_helper_1.convertToSlug)(searchKey.toLowerCase());
+        const products = yield database_1.default.query(`
+                WITH RECURSIVE category_hierarchy AS (
+                    SELECT category_id, parent_category_id, category_title
+                    FROM categories
+                    WHERE category_id = ${parseInt(category_id)}  -- danh mục gốc mà bạn click vào
+
+                    UNION ALL
+
+                    SELECT c.category_id, c.parent_category_id, c.category_title
+                    FROM categories c
+                    INNER JOIN category_hierarchy ch ON c.parent_category_id = ch.category_id
+                )
+                SELECT p.product_id, p.product_title, p.product_desc, p.image_url, p.price_unit, p.quantity, p.discount, p.slug
+                FROM products p
+                WHERE p.category_id IN (SELECT category_id FROM category_hierarchy)
+                AND p.slug LIKE '%${searchKey}%'
+                ORDER BY ${sortKey} ${sortValue}
+                LIMIT ${limit} OFFSET ${offset};
+            `, {
+            raw: true,
+            type: sequelize_1.QueryTypes.SELECT
+        });
+        const totalPage = Math.ceil(products.length / limit);
+        return res.json({
+            code: 200,
+            message: "load dữ liệu thành công",
+            data: products,
+            page: page,
+            totalPage: totalPage
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 500,
+            message: "Lỗi load product of category " + error
+        });
+    }
+});
+exports.getProductCategory = getProductCategory;

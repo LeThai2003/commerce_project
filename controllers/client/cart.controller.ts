@@ -140,7 +140,7 @@ export const add = async (req: Request, res: Response) => {
             if (cartItem["ordered_quantity"] + ordered_quantity > product["quantity"]) {
                 return res.json({
                     code: 400,
-                    message: `Số lượng đặt hàng không được vượt quá ${product["quantity"]}`
+                    message: `Số lượng đặt hàng không được vượt quá số lượng tồn kho`
                 });
             };
             await CartItem.update({
@@ -168,7 +168,7 @@ export const add = async (req: Request, res: Response) => {
         })
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi thêm sản phẩm vào giỏ hàng"
         })
     }
@@ -216,7 +216,7 @@ export const updateQuantity = async (req: Request, res: Response) => {
         })
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi cập nhật số lượng sản phẩm trong giỏ hàng"
         })
     }
@@ -241,7 +241,7 @@ export const deleteItem = async (req: Request, res: Response) => {
         })
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi xóa sản phẩm trong giỏ hàng"
         })
     }

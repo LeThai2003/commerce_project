@@ -26,10 +26,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.categoryRoutes = void 0;
+exports.rateRoute = void 0;
 const express_1 = __importDefault(require("express"));
-const controller = __importStar(require("../../controllers/client/category.controller"));
+const controller = __importStar(require("../../controllers/client/rate.controller"));
 const router = express_1.default.Router();
-router.get("/", controller.index);
-router.get("/:category_id", controller.getProductCategory);
-exports.categoryRoutes = router;
+router.patch("/:productId/:rate", controller.index);
+exports.rateRoute = router;

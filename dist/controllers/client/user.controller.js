@@ -33,8 +33,8 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         if (!credential || credential["is_enabled"][0] !== 1) {
             return res.json({
-                code: 402,
-                message: 'Tài Khoản không được hoạt động hoặc không hợp lệ'
+                code: 403,
+                message: 'Tài khoản bị vô hiệu hóa'
             });
         }
         const isValidPassword = yield bcrypt_1.default.compare(password, credential["password"]);
@@ -87,7 +87,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         if (userExist) {
             return res.json({
-                code: "400",
+                code: "409",
                 message: 'Email already registered.'
             });
         }
@@ -147,7 +147,7 @@ const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         });
         if (!isActiveToken) {
             return res.json({
-                code: 400,
+                code: 401,
                 message: "Invalid token"
             });
         }
@@ -175,13 +175,13 @@ const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     catch (error) {
         if (error.name === 'TokenExpiredError') {
             return res.json({
-                code: 400,
-                message: "Token expired. Please request a resend of verification email."
+                code: 401,
+                message: "REQUEST A RESEND EMAIL"
             });
         }
         else {
             return res.json({
-                code: 400,
+                code: 401,
                 message: "Invalid or expired token",
             });
         }
@@ -277,7 +277,7 @@ const passwordOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         });
         if (!isActiveToken) {
             return res.json({
-                code: 400,
+                code: 401,
                 message: "Invalid token"
             });
         }
@@ -326,7 +326,7 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const { email, password, comfirmPassword } = req.body;
         if (password !== comfirmPassword) {
             return res.json({
-                code: 400,
+                code: 401,
                 message: "Password and confirm password are not the same."
             });
         }
