@@ -32,10 +32,14 @@ const controller = __importStar(require("../../controllers/admin/account.control
 const multer_1 = __importDefault(require("multer"));
 const upload = (0, multer_1.default)();
 const uploadToCloud_1 = require("../../middlewares/admin/uploadToCloud");
+const verifyToken_middleware_1 = __importDefault(require("../../middlewares/admin/verifyToken.middleware"));
 const router = express_1.default.Router();
 router.get("/", controller.index);
+router.post("/login", controller.login);
+router.post("/password/forgot", controller.forgotPassword);
+router.post("/password/reset", controller.resetPassword);
+router.use(verifyToken_middleware_1.default);
 router.get("/create", controller.getCreate);
 router.post("/create", upload.single('image_url'), uploadToCloud_1.uploadSingle, controller.createPost);
-router.post("/login", controller.login);
 router.post("/logout", controller.logout);
 exports.accountRoute = router;

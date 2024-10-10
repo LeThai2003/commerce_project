@@ -29,7 +29,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
         const tokenData = yield verification_token_model_1.default.findOne({
             where: {
                 verif_token: token,
-                token_type: "refresh",
+                token_type: "refresh_admin",
                 expire_date: {
                     [sequelize_1.Op.gt]: new Date(Date.now())
                 }
@@ -45,7 +45,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
         const newAccessToken = jsonwebtoken_1.default.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
         const verificationData = {
             credential_id: tokenData["credential_id"],
-            token_type: "access",
+            token_type: "access_admin",
             verif_token: newAccessToken,
             expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
         };
@@ -83,7 +83,7 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
             }
             const isValidToken = yield verification_token_model_1.default.findOne({
                 where: {
-                    token_type: "access",
+                    token_type: "access_admin",
                     verif_token: accessToken,
                     expire_date: {
                         [sequelize_1.Op.gt]: new Date(Date.now())

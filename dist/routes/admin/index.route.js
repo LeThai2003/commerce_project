@@ -9,13 +9,14 @@ const category_route_1 = require("./category.route");
 const roles_route_1 = require("./roles.route");
 const account_route_1 = require("./account.route");
 const verifyToken_middleware_1 = __importDefault(require("../../middlewares/admin/verifyToken.middleware"));
+const systemConfig_1 = __importDefault(require("../../configs/systemConfig"));
 const adminRoutes = (app) => {
-    const path = "/admin";
+    const path = systemConfig_1.default["base_path"];
+    app.use(`${path}/accounts`, account_route_1.accountRoute);
     app.use(verifyToken_middleware_1.default);
     app.use(`${path}/products`, product_route_1.productRoute);
     app.use(`${path}/upload`, upload_route_1.uploadRoute);
     app.use(`${path}/categories`, category_route_1.categoryRoute);
     app.use(`${path}/roles`, roles_route_1.rolesRoute);
-    app.use(`${path}/accounts`, account_route_1.accountRoute);
 };
 exports.default = adminRoutes;

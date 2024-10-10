@@ -20,7 +20,7 @@ const refreshTokenHandler = async (token: string) => {
         const tokenData = await VerificationToken.findOne({
             where: {
                 verif_token: token,
-                token_type: "refresh",
+                token_type: "refresh_admin",
                 expire_date: {
                     [Op.gt]: new Date(Date.now())
                 }
@@ -41,7 +41,7 @@ const refreshTokenHandler = async (token: string) => {
         // lưu access token mới vào cơ sở dữ liệu
         const verificationData = {
             credential_id: tokenData["credential_id"],
-            token_type: "access",
+            token_type: "access_admin",
             verif_token: newAccessToken,
             expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000) // 12 hours
         };
@@ -87,7 +87,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             // Kiểm tra token có hợp lệ không
             const isValidToken = await VerificationToken.findOne({
                 where: {
-                    token_type: "access",
+                    token_type: "access_admin",
                     verif_token: accessToken,
                     expire_date: {
                         [Op.gt]: new Date(Date.now())

@@ -5,10 +5,13 @@ import { categoryRoute } from "./category.route";
 import { rolesRoute } from "./roles.route";
 import { accountRoute } from "./account.route";
 import verifyToken from "../../middlewares/admin/verifyToken.middleware"
+import systemConfig from "../../configs/systemConfig";
 
 const adminRoutes = (app : Express) : void => {
 
-    const path = "/admin";
+    const path = systemConfig["base_path"];
+
+    app.use(`${path}/accounts`, accountRoute);
 
     app.use(verifyToken);
 
@@ -19,11 +22,6 @@ const adminRoutes = (app : Express) : void => {
     app.use(`${path}/categories`, categoryRoute);
 
     app.use(`${path}/roles`, rolesRoute);
-
-    app.use(`${path}/accounts`, accountRoute);
-
-    
-
 }
 
 export default adminRoutes;
