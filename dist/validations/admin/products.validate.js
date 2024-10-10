@@ -4,19 +4,19 @@ exports.createProductValidation = void 0;
 const createProductValidation = (req, res, next) => {
     console.log("Chạy vào đây!");
     if (!req.body["product_title"].trim()) {
-        res.json({
+        return res.json({
             code: 400,
             message: "Tiêu đề không để trống"
         });
     }
     if (!parseInt(req.body["price_unit"])) {
-        res.json({
+        return res.json({
             code: 400,
             message: "Tiền không được để trống"
         });
     }
     if (!parseInt(req.body["quantity"])) {
-        res.json({
+        return res.json({
             code: 400,
             message: "Số lượng không được để trống"
         });
