@@ -49,7 +49,6 @@ export const index = async (req: Request, res: Response) => {
             };
         } 
 
-        
 
         // sort 
         const sort: [string, string][] = [];
@@ -67,21 +66,16 @@ export const index = async (req: Request, res: Response) => {
         }
 
         // filter price
-        if (req.query["fromPrice"] && req.query["toPrice"]) {
-            const fromPriceQuery = req.query["fromPrice"];
-            const toPriceQuery = req.query["toPrice"];
-
-            if (typeof fromPriceQuery === 'string' && typeof toPriceQuery === 'string') {
-                let price1 = parseInt(fromPriceQuery);
-                let price2 = parseInt(toPriceQuery);
-
-                find["price_unit"] = {
-                    [Op.and]: [
-                        { [Op.gte]: price1 },
-                        { [Op.lte]: price2 },
-                    ]
-                };
-            }
+        const fromPrice = parseInt(req.query["fromPrice"] as string) || 0;
+        const toPrice = parseInt(req.query["toPrice"] as string) || 0;
+        if (fromPrice && toPrice) {
+            
+            find["price_unit"] = {
+                [Op.and]: [
+                    { [Op.gte]: fromPrice },
+                    { [Op.lte]: toPrice },
+                ]
+            };
         }
 
         // search with title
@@ -172,7 +166,9 @@ export const index = async (req: Request, res: Response) => {
             code: 200,
             data: paginatedProducts,
             totalPage: objectPagination["totalPage"],
-            pageNow: objectPagination["page"]
+            pageNow: objectPagination["page"],
+            fromPrice: fromPrice,
+            toPrice: toPrice
         });
     } catch (error) {
         return res.json({

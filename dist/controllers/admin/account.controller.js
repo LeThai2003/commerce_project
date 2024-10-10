@@ -39,7 +39,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi lấy danh sách roles" + error
         });
     }
@@ -64,7 +64,7 @@ const getCreate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi lấy danh sách roles" + error
         });
     }
@@ -82,7 +82,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         });
         if (userExist) {
             return res.json({
-                code: "400",
+                code: "409",
                 message: 'email trùng'
             });
         }
@@ -111,7 +111,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi tạo tài khoản" + error
         });
     }

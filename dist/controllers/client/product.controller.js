@@ -68,19 +68,15 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 console.error('sortValue is not a string');
             }
         }
-        if (req.query["fromPrice"] && req.query["toPrice"]) {
-            const fromPriceQuery = req.query["fromPrice"];
-            const toPriceQuery = req.query["toPrice"];
-            if (typeof fromPriceQuery === 'string' && typeof toPriceQuery === 'string') {
-                let price1 = parseInt(fromPriceQuery);
-                let price2 = parseInt(toPriceQuery);
-                find["price_unit"] = {
-                    [sequelize_1.Op.and]: [
-                        { [sequelize_1.Op.gte]: price1 },
-                        { [sequelize_1.Op.lte]: price2 },
-                    ]
-                };
-            }
+        const fromPrice = parseInt(req.query["fromPrice"]) || 0;
+        const toPrice = parseInt(req.query["toPrice"]) || 0;
+        if (fromPrice && toPrice) {
+            find["price_unit"] = {
+                [sequelize_1.Op.and]: [
+                    { [sequelize_1.Op.gte]: fromPrice },
+                    { [sequelize_1.Op.lte]: toPrice },
+                ]
+            };
         }
         if (req.query["searchKey"]) {
             const titleFromSearh = req.query["searchKey"];
@@ -140,7 +136,9 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             code: 200,
             data: paginatedProducts,
             totalPage: objectPagination["totalPage"],
-            pageNow: objectPagination["page"]
+            pageNow: objectPagination["page"],
+            fromPrice: fromPrice,
+            toPrice: toPrice
         });
     }
     catch (error) {

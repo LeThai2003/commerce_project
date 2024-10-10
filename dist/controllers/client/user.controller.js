@@ -88,7 +88,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (userExist) {
             return res.json({
                 code: "409",
-                message: 'Email already registered.'
+                message: 'Email đã được đăng ký'
             });
         }
         const hashPassword = yield bcrypt_1.default.hash(password, 10);

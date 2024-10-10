@@ -18,10 +18,10 @@ const verification_token_model_1 = __importDefault(require("../../models/verific
 const sequelize_1 = require("sequelize");
 const user_model_1 = __importDefault(require("../../models/user.model"));
 const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    if (req.headers['authorization']) {
-        const token = req.headers['authorization'].split(" ")[1];
+    if (req.headers["token_manager"]) {
+        const token_manager = req.headers["token_manager"];
         try {
-            const decoded = jsonwebtoken_1.default.verify(token, process.env.SECRET_KEY);
+            const decoded = jsonwebtoken_1.default.verify(token_manager, process.env.SECRET_KEY);
             const { credential_id } = decoded;
             const credential = yield credential_model_1.default.findOne({
                 where: {
@@ -40,7 +40,7 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 const isValidToken = yield verification_token_model_1.default.findOne({
                     where: {
                         token_type: "access",
-                        verif_token: token,
+                        verif_token: token_manager,
                         expire_date: {
                             [sequelize_1.Op.gt]: new Date(Date.now())
                         }

@@ -28,7 +28,7 @@ export const index = async (req: Request, res: Response) => {
         });
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi lấy danh sách roles" +error
         });
     }
@@ -54,7 +54,7 @@ export const getCreate = async (req: Request, res: Response) => {
         });
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi lấy danh sách roles" +error
         });
     }
@@ -78,7 +78,7 @@ export const createPost = async (req: Request, res: Response) => {
         if(userExist)
         {
             return res.json({ 
-                code: "400",
+                code: "409",
                 message: 'email trùng' 
             });
         }
@@ -114,7 +114,7 @@ export const createPost = async (req: Request, res: Response) => {
         });
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi tạo tài khoản" +error
         });
     }

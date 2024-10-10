@@ -108,7 +108,7 @@ export const register = async (req: Request, res: Response) => {
         {
             return res.json({ 
                 code: "409",
-                message: 'Email already registered.' 
+                message: 'Email đã được đăng ký' 
             });
         }
 

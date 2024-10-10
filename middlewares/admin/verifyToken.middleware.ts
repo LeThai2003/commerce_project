@@ -6,12 +6,12 @@ import { Op } from "sequelize";
 import User from "../../models/user.model";
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
-    if(req.headers['authorization'])
+    if(req.headers["token_manager"])
     {
-        const token = req.headers['authorization'].split(" ")[1];
+        const token_manager = req.headers["token_manager"];
 
         try {
-            const decoded = jwt.verify(token, process.env.SECRET_KEY);
+            const decoded = jwt.verify(token_manager, process.env.SECRET_KEY);
             const { credential_id } = decoded;
 
             const credential = await Credential.findOne({
@@ -33,7 +33,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
                 const isValidToken = await VerificationToken.findOne({
                     where:{
                         token_type: "access",
-                        verif_token: token,
+                        verif_token: token_manager,
                         expire_date: {
                             [Op.gt] : new Date(Date.now())
                         }
