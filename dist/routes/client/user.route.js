@@ -29,7 +29,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.userRoutes = void 0;
 const express_1 = __importDefault(require("express"));
 const controller = __importStar(require("../../controllers/client/user.controller"));
-const user_validation_1 = require("../../validations/admin/user.validation");
+const user_validation_1 = require("../../validations/client/user.validation");
 const router = express_1.default.Router();
 router.post("/login", user_validation_1.loginValidation, controller.login);
 router.post("/register", user_validation_1.registerValidation, controller.register);

@@ -1,6 +1,6 @@
 import express, {Router } from "express"
 import * as controller from "../../controllers/client/user.controller";
-import { forgotPasswordValidation, loginValidation, registerValidation, resetPasswordValidation } from "../../validations/admin/user.validation";
+import { forgotPasswordValidation, loginValidation, registerValidation, resetPasswordValidation } from "../../validations/client/user.validation";
 
 const router : Router = express.Router();
 

@@ -123,6 +123,8 @@ export const index = async (req: Request, res: Response) => {
                 type: QueryTypes.SELECT
             });
 
+            console.log(ratingAVG)
+
             item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0
         }
 
@@ -145,7 +147,7 @@ export const index = async (req: Request, res: Response) => {
                 const averageRating = parseFloat(avgRating[0]["average_rating"]) || 0;
                 
                 if (averageRating >= rateValue) {
-                    item["rating"] = averageRating.toFixed(1);
+                    item["rating"] = parseFloat(averageRating.toFixed(1));
                     return item; 
                 }
                 

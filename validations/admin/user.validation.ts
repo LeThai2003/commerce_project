@@ -1,16 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
-export const registerValidation = (req: Request, res: Response, next: NextFunction) => {
+export const createValidation = (req: Request, res: Response, next: NextFunction) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const regexPhoneNumber = /^(0[3-9]\d{8})$/;
 
-    if(!req.body["username"].trim())
-    {
-        return res.json({
-            code: 400,
-            message: "Tên đăng nhập không được để trống"
-        })
-    }
     if(!req.body["password"])
     {
         return res.json({
@@ -30,6 +23,13 @@ export const registerValidation = (req: Request, res: Response, next: NextFuncti
         return res.json({
             code: 400,
             message: "Email không được để trống"
+        })
+    }
+    if(!parseInt(req.body["role_id"]))
+    {
+        return res.json({
+            code: 400,
+            message: "Role_id không được để trống"
         })
     }
     if(!req.body["email"].trim().match(emailRegex))

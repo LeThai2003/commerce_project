@@ -1,9 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loginValidation = exports.forgotPasswordValidation = exports.resetPasswordValidation = exports.createValidation = void 0;
-const createValidation = (req, res, next) => {
+exports.loginValidation = exports.forgotPasswordValidation = exports.resetPasswordValidation = exports.registerValidation = void 0;
+const registerValidation = (req, res, next) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const regexPhoneNumber = /^(0[3-9]\d{8})$/;
+    if (!req.body["username"].trim()) {
+        return res.json({
+            code: 400,
+            message: "Tên đăng nhập không được để trống"
+        });
+    }
     if (!req.body["password"]) {
         return res.json({
             code: 400,
@@ -22,12 +28,6 @@ const createValidation = (req, res, next) => {
             message: "Email không được để trống"
         });
     }
-    if (!parseInt(req.body["role_id"])) {
-        return res.json({
-            code: 400,
-            message: "Role_id không được để trống"
-        });
-    }
     if (!req.body["email"].trim().match(emailRegex)) {
         return res.json({
             code: 400,
@@ -42,7 +42,7 @@ const createValidation = (req, res, next) => {
     }
     next();
 };
-exports.createValidation = createValidation;
+exports.registerValidation = registerValidation;
 const resetPasswordValidation = (req, res, next) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!req.body["email"]) {

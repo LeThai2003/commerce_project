@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getProductCategory = exports.index = void 0;
+exports.getPrice = exports.getProductCategory = exports.index = void 0;
 const category_model_1 = __importDefault(require("../../models/category.model"));
 const create_tree_helper_1 = require("../../helpers/create-tree.helper");
 const database_1 = __importDefault(require("../../configs/database"));
@@ -91,3 +91,29 @@ const getProductCategory = (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.getProductCategory = getProductCategory;
+const getPrice = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const objectPrice = yield database_1.default.query(`
+            SELECT MIN(products.price_unit) as min, MAX(products.price_unit) as max
+            FROM products
+        `, {
+            type: sequelize_1.QueryTypes.SELECT,
+            raw: true
+        });
+        console.log(objectPrice);
+        const fromPrice = objectPrice[0]["min"];
+        const toPrice = objectPrice[0]["max"];
+        return res.json({
+            code: 200,
+            fromPrice: fromPrice,
+            toPrice: toPrice
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 500,
+            message: "Lỗi " + error
+        });
+    }
+});
+exports.getPrice = getPrice;

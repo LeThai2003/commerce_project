@@ -5,6 +5,8 @@ const router : Router = express.Router();
 
 router.get("/", controller.index);
 
+router.get("/get-price", controller.getPrice);
+
 router.get("/:category_id", controller.getProductCategory);
 
 export const categoryRoutes : Router = router;

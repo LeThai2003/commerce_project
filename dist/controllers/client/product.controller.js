@@ -114,6 +114,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 raw: true,
                 type: sequelize_1.QueryTypes.SELECT
             });
+            console.log(ratingAVG);
             item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
         }
         let rate = req.query["rate"];
@@ -130,7 +131,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 });
                 const averageRating = parseFloat(avgRating[0]["average_rating"]) || 0;
                 if (averageRating >= rateValue) {
-                    item["rating"] = averageRating.toFixed(1);
+                    item["rating"] = parseFloat(averageRating.toFixed(1));
                     return item;
                 }
                 return null;

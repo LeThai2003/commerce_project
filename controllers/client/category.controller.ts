@@ -3,8 +3,9 @@ import Category from "../../models/category.model";
 import { createTreeHelper } from "../../helpers/create-tree.helper";
 import Product from "../../models/product.model";
 import sequelize from "../../configs/database";
-import { QueryTypes } from "sequelize";
+import { DataTypes, QueryTypes } from "sequelize";
 import { convertToSlug } from "../../helpers/convert-to-slug.helper";
+import { Types } from "mysql2";
 
 //[GET] /categories
 export const index = async(req: Request, res: Response) => {
@@ -85,6 +86,37 @@ export const getProductCategory = async(req: Request, res: Response) => {
         return res.json({
             code: 500,
             message: "Lỗi load product of category " + error
+        })
+    }
+}
+
+//[GET] /categories
+export const getPrice = async(req: Request, res: Response) => {
+    try {
+        
+        const objectPrice = await sequelize.query(`
+            SELECT MIN(products.price_unit) as min, MAX(products.price_unit) as max
+            FROM products
+        `, {
+            type: QueryTypes.SELECT,
+            raw: true
+        });
+
+        console.log(objectPrice);
+
+        const fromPrice = objectPrice[0]["min"];
+        const toPrice = objectPrice[0]["max"];
+
+        return res.json({
+            code: 200,
+            fromPrice: fromPrice,
+            toPrice: toPrice
+        })
+
+    } catch (error) {
+        return res.json({
+            code: 500,
+            message: "Lỗi " + error
         })
     }
 }

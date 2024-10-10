@@ -31,5 +31,6 @@ const express_1 = __importDefault(require("express"));
 const controller = __importStar(require("../../controllers/client/category.controller"));
 const router = express_1.default.Router();
 router.get("/", controller.index);
+router.get("/get-price", controller.getPrice);
 router.get("/:category_id", controller.getProductCategory);
 exports.categoryRoutes = router;
