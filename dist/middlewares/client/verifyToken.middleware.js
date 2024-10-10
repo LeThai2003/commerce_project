@@ -22,7 +22,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
     if (!token) {
         return {
             code: 402,
-            message: "Refresh token is required."
+            message: "Yêu cầu refresh token"
         };
     }
     try {
@@ -39,7 +39,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
         if (!tokenData) {
             return {
                 code: 401,
-                message: "Invalid refresh token."
+                message: "Token không hợp lệ"
             };
         }
         const newAccessToken = jsonwebtoken_1.default.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
@@ -57,7 +57,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
     }
     catch (error) {
         return {
-            code: 400,
+            code: 500,
             message: "Error refreshing token."
         };
     }
@@ -77,8 +77,8 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
             });
             if (!credential) {
                 return res.json({
-                    code: 400,
-                    message: 'Account not activated or does not exist.'
+                    code: 404,
+                    message: 'Tài khoản không tồn tại'
                 });
             }
             const isValidToken = yield verification_token_model_1.default.findOne({
@@ -93,8 +93,8 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
             });
             if (!isValidToken) {
                 return res.json({
-                    code: 403,
-                    message: 'Invalid token. Access denied.'
+                    code: 401,
+                    message: 'Token không hợp lệ. Truy cập bị từ chối'
                 });
             }
             req["credential_id"] = credential_id;
@@ -125,15 +125,15 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 }
                 else {
                     return res.json({
-                        code: 403,
-                        message: 'Access token expired. No refresh token provided.'
+                        code: 401,
+                        message: 'Token hết hạn hoặc không có token'
                     });
                 }
             }
             else {
                 return res.json({
                     code: 401,
-                    message: 'Invalid token. Access denied.'
+                    message: 'Token không hợp lệ. Từ chối truy cập'
                 });
             }
         }
@@ -141,7 +141,7 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
     else {
         return res.json({
             code: 403,
-            message: 'Access denied. No token provided.'
+            message: 'Từ chối truy cập. Không có token'
         });
     }
 });

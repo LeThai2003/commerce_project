@@ -11,7 +11,7 @@ const refreshTokenHandler = async (token: string) => {
     if (!token) {
         return {
             code: 402,
-            message: "Refresh token is required."
+            message: "Yêu cầu refresh token"
         };
     }
 
@@ -30,7 +30,7 @@ const refreshTokenHandler = async (token: string) => {
         if (!tokenData) {
             return {
                 code: 401,
-                message: "Invalid refresh token."
+                message: "Token không hợp lệ"
             };
         }
 
@@ -54,7 +54,7 @@ const refreshTokenHandler = async (token: string) => {
 
     } catch (error) {
         return {
-            code: 400,
+            code: 500,
             message: "Error refreshing token."
         };
     }
@@ -78,8 +78,8 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 
             if (!credential) {
                 return res.json({
-                    code: 400,
-                    message: 'Account not activated or does not exist.'
+                    code: 404,
+                    message: 'Tài khoản không tồn tại'
                 });
             }
 
@@ -97,8 +97,8 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 
             if (!isValidToken) {
                 return res.json({
-                    code: 403,
-                    message: 'Invalid token. Access denied.'
+                    code: 401,
+                    message: 'Token không hợp lệ. Truy cập bị từ chối'
                 });
             }
 
@@ -139,21 +139,21 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
                 else 
                 {
                     return res.json({
-                        code: 403,
-                        message: 'Access token expired. No refresh token provided.'
+                        code: 401,
+                        message: 'Token hết hạn hoặc không có token'
                     });
                 }
             } else {
                 return res.json({
                     code: 401,
-                    message: 'Invalid token. Access denied.'
+                    message: 'Token không hợp lệ. Từ chối truy cập'
                 });
             }
         }
     } else {
         return res.json({
             code: 403,
-            message: 'Access denied. No token provided.'
+            message: 'Từ chối truy cập. Không có token'
         });
     }
 };

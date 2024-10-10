@@ -11,6 +11,7 @@ const verify_phone_route_1 = require("./verify_phone.route");
 const account_route_1 = require("./account.route");
 const category_route_1 = require("./category.route");
 const rate_route_1 = require("./rate.route");
+const upload_route_1 = require("./upload.route");
 const verifyToken_middleware_1 = __importDefault(require("../../middlewares/client/verifyToken.middleware"));
 const clientRoutes = (app) => {
     app.use("/categories", category_route_1.categoryRoutes);
@@ -21,5 +22,6 @@ const clientRoutes = (app) => {
     app.use("/verify-phone", verifyToken_middleware_1.default, verify_phone_route_1.verifyPhoneRoute);
     app.use("/account", verifyToken_middleware_1.default, account_route_1.accountRoutes);
     app.use("/rate", verifyToken_middleware_1.default, rate_route_1.rateRoute);
+    app.use(`/upload`, upload_route_1.uploadRoute);
 };
 exports.default = clientRoutes;

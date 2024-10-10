@@ -94,7 +94,7 @@ export const register = async (req: Request, res: Response) => {
     
     try {
         console.log(req.body);
-        const { username, password, first_name, last_name, email, phone } = req.body;
+        const { username, password, first_name, last_name, email, phone, image_url } = req.body;
 
         // kiểm tra email trùng 
         const userExist = await User.findOne({
@@ -130,7 +130,8 @@ export const register = async (req: Request, res: Response) => {
             first_name: first_name,
             last_name: last_name,
             email: email,
-            phone: phone
+            phone: phone,
+            image_url: image_url || ""
         }
 
         const user = await User.create(data_user);

@@ -78,7 +78,7 @@ exports.login = login;
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log(req.body);
-        const { username, password, first_name, last_name, email, phone } = req.body;
+        const { username, password, first_name, last_name, email, phone, image_url } = req.body;
         const userExist = yield user_model_1.default.findOne({
             where: {
                 email: email
@@ -104,7 +104,8 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             first_name: first_name,
             last_name: last_name,
             email: email,
-            phone: phone
+            phone: phone,
+            image_url: image_url || ""
         };
         const user = yield user_model_1.default.create(data_user);
         const verificationToken = jsonwebtoken_1.default.sign({ credential_id }, process.env.SECRET_KEY, { expiresIn: "24h" });

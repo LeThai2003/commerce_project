@@ -6,7 +6,11 @@ const router : Router = express.Router();
 
 router.post("/login", loginValidation, controller.login);
 
-router.post("/register", registerValidation, controller.register);
+router.post(
+    "/register", 
+    registerValidation, 
+    controller.register
+);
 
 router.get("/verify-email", controller.verifyEmail); // xác thực email -- login
 
