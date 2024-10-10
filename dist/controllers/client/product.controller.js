@@ -106,6 +106,15 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 raw: true
             });
             item["total_quantity_sold"] = parseInt(countQuantitySale[0]["total_quantity_sold"]) || 0;
+            const ratingAVG = yield database_1.default.query(`
+                SELECT AVG(rate.star) as rating 
+                FROM rate
+                WHERE rate.product_id = ${item["product_id"]}
+            `, {
+                raw: true,
+                type: sequelize_1.QueryTypes.SELECT
+            });
+            item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
         }
         let rate = req.query["rate"];
         if (rate) {

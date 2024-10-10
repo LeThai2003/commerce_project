@@ -95,7 +95,7 @@ export const index = async (req: Request, res: Response) => {
             raw: true,
         });
 
-        // ---- giá mới + đếm số lượng sản phẩm đã bán ---
+        // ---- giá mới + đếm số lượng sản phẩm đã bán + rating ---
         for (const item of products) {
             const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
             item["newPrice"] = newPrice.toFixed(0);
@@ -113,6 +113,17 @@ export const index = async (req: Request, res: Response) => {
             });
 
             item["total_quantity_sold"] = parseInt(countQuantitySale[0]["total_quantity_sold"]) || 0;
+
+            const ratingAVG = await sequelize.query(`
+                SELECT AVG(rate.star) as rating 
+                FROM rate
+                WHERE rate.product_id = ${item["product_id"]}
+            `, {
+                raw: true,
+                type: QueryTypes.SELECT
+            });
+
+            item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0
         }
 
         // rate
