@@ -18,6 +18,39 @@ export const index = async (req: Request, res: Response) => {
             deleted: false,
         };
 
+        const category_id = parseInt(req.query["category_id"] as string);
+        if(category_id)
+        {
+            const category_ids = await sequelize.query(`
+                WITH RECURSIVE category_hierarchy AS (
+                SELECT category_id, parent_category_id, category_title
+                FROM categories
+                WHERE category_id = ${category_id}  -- danh mục gốc mà bạn click vào
+
+                UNION ALL
+
+                SELECT c.category_id, c.parent_category_id, c.category_title
+                FROM categories c
+                INNER JOIN category_hierarchy ch ON c.parent_category_id = ch.category_id
+            )
+            SELECT category_id from category_hierarchy
+            `, {
+                raw: true,
+                type: QueryTypes.SELECT
+            })
+            //          category_ids = [ { category_id: 11 }, { category_id: 22 } ]
+            const just_category_ids = [];
+            for (const item of category_ids) {
+                just_category_ids.push(item["category_id"])
+            };
+            console.log(just_category_ids);
+            find["category_id"] = {
+                [Op.in]: just_category_ids
+            };
+        } 
+
+        
+
         // sort 
         const sort: [string, string][] = [];
 
@@ -120,6 +153,12 @@ export const index = async (req: Request, res: Response) => {
             products = results.filter(item => item !== null);
         }
 
+       
+
+        // AND p.slug LIKE '%${searchKey}%'
+        // ORDER BY ${sortKey} ${sortValue}
+        // LIMIT ${limit} OFFSET ${offset};
+
         // Sau khi đã lọc xong -> phân trang
         const countProducts = products.length;
         const objectPagination = paginationHelper(req, countProducts);
@@ -127,7 +166,7 @@ export const index = async (req: Request, res: Response) => {
         // Áp dụng phân trang
         const paginatedProducts = products.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
 
-        console.log(paginatedProducts);
+        // console.log(paginatedProducts);
 
         return res.json({
             code: 200,

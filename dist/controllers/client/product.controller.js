@@ -27,6 +27,35 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             status: "active",
             deleted: false,
         };
+        const category_id = parseInt(req.query["category_id"]);
+        if (category_id) {
+            const category_ids = yield database_1.default.query(`
+                WITH RECURSIVE category_hierarchy AS (
+                SELECT category_id, parent_category_id, category_title
+                FROM categories
+                WHERE category_id = ${category_id}  -- danh mục gốc mà bạn click vào
+
+                UNION ALL
+
+                SELECT c.category_id, c.parent_category_id, c.category_title
+                FROM categories c
+                INNER JOIN category_hierarchy ch ON c.parent_category_id = ch.category_id
+            )
+            SELECT category_id from category_hierarchy
+            `, {
+                raw: true,
+                type: sequelize_1.QueryTypes.SELECT
+            });
+            const just_category_ids = [];
+            for (const item of category_ids) {
+                just_category_ids.push(item["category_id"]);
+            }
+            ;
+            console.log(just_category_ids);
+            find["category_id"] = {
+                [sequelize_1.Op.in]: just_category_ids
+            };
+        }
         const sort = [];
         if (req.query["sortKey"] && req.query["sortValue"]) {
             const sortKey = req.query["sortKey"];
@@ -107,7 +136,6 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const countProducts = products.length;
         const objectPagination = (0, pagination_helper_1.paginationHelper)(req, countProducts);
         const paginatedProducts = products.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
-        console.log(paginatedProducts);
         return res.json({
             code: 200,
             data: paginatedProducts,
