@@ -26,10 +26,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyPhoneRoute = void 0;
+exports.addressRoute = void 0;
 const express_1 = __importDefault(require("express"));
-const controller = __importStar(require("../../controllers/client/verifyPhone.controller"));
+const controller = __importStar(require("../../controllers/client/address.controller"));
 const router = express_1.default.Router();
-router.post("/sendOTP", controller.sendOTP);
-router.post("/verifyOTP", controller.verifyOTP);
-exports.verifyPhoneRoute = router;
+router.get("/", controller.index);
+router.post("/add", controller.addAddress);
+router.patch("/set-default/:address_id", controller.setDefaultAddess);
+exports.addressRoute = router;

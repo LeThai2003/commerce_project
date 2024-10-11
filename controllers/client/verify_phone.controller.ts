@@ -45,7 +45,7 @@ export const sendOTP = async (req: Request, res: Response) => {
     }
 }
 
-//[POST] /sendOTP
+//[POST] /verifyOTP
 export const verifyOTP = async (req: Request, res: Response) => {
     try {
         let {phone} = req.body["infoCustomer"];
@@ -73,7 +73,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
         })
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi xác thực"
         })
     }

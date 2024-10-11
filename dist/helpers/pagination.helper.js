@@ -4,7 +4,7 @@ exports.paginationHelper = void 0;
 const paginationHelper = (req, countItems) => {
     let objectPagination = {
         page: 1,
-        limit: 5,
+        limit: 8,
     };
     if (req.query["page"]) {
         const pageQuery = req.query["page"];

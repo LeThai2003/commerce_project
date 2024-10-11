@@ -91,9 +91,10 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             order: sort,
             raw: true,
         });
+        console.log("----------------------------------------");
         for (const item of products) {
             const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
-            item["newPrice"] = newPrice.toFixed(0);
+            item["newPrice"] = newPrice;
             const countQuantitySale = yield database_1.default.query(`
                 SELECT SUM(order_items.ordered_quantity) AS total_quantity_sold
                 FROM orders
@@ -114,7 +115,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 raw: true,
                 type: sequelize_1.QueryTypes.SELECT
             });
-            console.log(ratingAVG);
+            console.log(parseFloat(ratingAVG[0]["rating"]));
             item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
         }
         let rate = req.query["rate"];

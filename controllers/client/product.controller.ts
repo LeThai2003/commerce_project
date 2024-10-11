@@ -95,10 +95,12 @@ export const index = async (req: Request, res: Response) => {
             raw: true,
         });
 
+        console.log("----------------------------------------")
+
         // ---- giá mới + đếm số lượng sản phẩm đã bán + rating ---
         for (const item of products) {
             const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
-            item["newPrice"] = newPrice.toFixed(0);
+            item["newPrice"] = newPrice;
 
             const countQuantitySale = await sequelize.query(`
                 SELECT SUM(order_items.ordered_quantity) AS total_quantity_sold
@@ -123,7 +125,7 @@ export const index = async (req: Request, res: Response) => {
                 type: QueryTypes.SELECT
             });
 
-            console.log(ratingAVG)
+            console.log(parseFloat(ratingAVG[0]["rating"]))
 
             item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0
         }

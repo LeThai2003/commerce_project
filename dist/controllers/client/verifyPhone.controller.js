@@ -13,56 +13,85 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyOTP = exports.sendOTP = void 0;
-const sequelize_1 = require("sequelize");
-const server_sdk_1 = require("@vonage/server-sdk");
-const auth_1 = require("@vonage/auth");
 const generate_helper_1 = require("../../helpers/generate.helper");
+const follow_redirects_1 = require("follow-redirects");
 const phoneVerification__model_1 = __importDefault(require("../../models/phoneVerification .model"));
-const vonage = new server_sdk_1.Vonage(new auth_1.Auth({
-    apiKey: "d6f5a51a",
-    apiSecret: "0wkawMKbUYFkpPhI"
-}));
+const sequelize_1 = require("sequelize");
 const sendOTP = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let { phone } = req.body["infoCustomer"];
+        let phone = req.body["phone"];
+        phone = '84' + phone.slice(1, phone.length);
+        console.log(phone);
         const otp = (0, generate_helper_1.generateRandomNumber)(6);
+        const sendOTP = (phone, otp) => {
+            const options = {
+                'method': 'POST',
+                'hostname': 'v33emr.api.infobip.com',
+                'path': '/sms/2/text/advanced',
+                'headers': {
+                    'Authorization': `App ${process.env.INFOBIP_API_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                'maxRedirects': 20
+            };
+            const req = follow_redirects_1.https.request(options, function (res) {
+                let chunks = [];
+                res.on("data", chunk => chunks.push(chunk));
+                res.on("end", () => {
+                    const body = Buffer.concat(chunks);
+                    console.log(`SMS Sent: ${body.toString()}`);
+                });
+                res.on("error", error => console.error(error));
+            });
+            const postData = JSON.stringify({
+                "messages": [
+                    {
+                        "destinations": [{ "to": phone }],
+                        "from": "Shop...",
+                        "text": `Your OTP is: <b>${otp}</b>. Expired in 5 minutes`
+                    }
+                ]
+            });
+            req.write(postData);
+            req.end();
+        };
+        sendOTP(phone, otp);
         yield phoneVerification__model_1.default.create({
             phone: phone,
             otp: otp,
             expiresAt: new Date(Date.now() + 5 * 60000)
         });
-        const from = "SHOP...";
-        const to = phone;
-        const text = `Mã xác thực số điện thoại bạn là <b>${otp}</b>. Vui lòng không chia sẻ mã cho ai! <i>Mã có hiệu lực 5 phút</i>`;
-        function sendSMS() {
-            return __awaiter(this, void 0, void 0, function* () {
-                yield vonage.sms.send({ to, from, text })
-                    .then(resp => { return res.json({ code: 200, messsage: 'Gửi tin nhắn thành công!' }); })
-                    .catch(err => { return res.json({ code: 400, messsage: 'Gửi tin nhắn thất bại!' }); });
-            });
-        }
-        sendSMS();
+        return res.json({
+            code: 200,
+            message: "Gửi mã otp thành công"
+        });
     }
     catch (error) {
         return res.json({
             code: 400,
-            message: "Lỗi gửi tin nhắn"
+            message: "Lỗi gửi tin nhắn" + error
         });
     }
 });
 exports.sendOTP = sendOTP;
 const verifyOTP = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let { phone } = req.body["infoCustomer"];
-        let { opt } = req.body["otp"];
+        let phone = req.body["phone"];
+        phone = '84' + phone.slice(1, phone.length);
+        let opt = req.body["otp"];
+        console.log(phone);
+        console.log(opt);
         const record = yield phoneVerification__model_1.default.findOne({
             where: {
                 phone: phone,
                 otp: opt,
                 expiresAt: {
                     [sequelize_1.Op.gt]: new Date(Date.now())
-                }
+                },
+                verify_phone_number: false,
             },
+            raw: true
         });
         if (!record) {
             return res.json({
@@ -70,6 +99,13 @@ const verifyOTP = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 message: "Mã OTP không hợp lệ hoặc đã hết hạn."
             });
         }
+        yield phoneVerification__model_1.default.update({
+            verify_phone_number: true
+        }, {
+            where: {
+                id: record["id"]
+            }
+        });
         return res.json({
             code: 200,
             message: "Xác thực thành công!",
@@ -78,7 +114,7 @@ const verifyOTP = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (error) {
         return res.json({
             code: 500,
-            message: "Lỗi xác thực"
+            message: "Lỗi xác thực " + error
         });
     }
 });

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/user.model";
 import { where } from "sequelize";
+import Address from "../../models/address.model";
 
 
 
@@ -8,6 +9,15 @@ import { where } from "sequelize";
 export const index = async (req: Request, res: Response) => {
     try {
         let user = res.locals.user;
+
+        const addresses = await Address.findAll({
+            where: {
+                user_id: user["user_id"],
+            },
+            raw: true
+        })
+
+        user["addresses"] = addresses
     
         return res.json({
             code: 200,

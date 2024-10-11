@@ -14,9 +14,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.edit = exports.index = void 0;
 const user_model_1 = __importDefault(require("../../models/user.model"));
+const address_model_1 = __importDefault(require("../../models/address.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = res.locals.user;
+        const addresses = yield address_model_1.default.findAll({
+            where: {
+                user_id: user["user_id"],
+            },
+            raw: true
+        });
+        user["addresses"] = addresses;
         return res.json({
             code: 200,
             data: user

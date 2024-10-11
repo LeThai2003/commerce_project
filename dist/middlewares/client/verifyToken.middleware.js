@@ -63,9 +63,11 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    if (req.headers["accesstoken"]) {
-        const accessToken = req.headers["accesstoken"];
+    let accessToken = req.headers["authorization"];
+    console.log(accessToken);
+    if (accessToken) {
         try {
+            accessToken = accessToken.split(" ")[1];
             const decoded = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
             const credential = yield credential_model_1.default.findOne({
@@ -133,7 +135,7 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
             else {
                 return res.json({
                     code: 401,
-                    message: 'Token không hợp lệ. Từ chối truy cập'
+                    message: 'Token không hợp lệ. Từ chối truy cập ---'
                 });
             }
         }

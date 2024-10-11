@@ -17,6 +17,10 @@ const PhoneVerification  = sequelize.define("PhoneVerification ", {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    verify_phone_number:{
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     expiresAt: {
         type: DataTypes.DATE,
         allowNull: false,

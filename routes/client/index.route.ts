@@ -9,6 +9,7 @@ import { categoryRoutes } from "./category.route";
 import { rateRoute } from "./rate.route";
 import { uploadRoute } from "./upload.route";
 import verifyToken from "../../middlewares/client/verifyToken.middleware";
+import { addressRoute } from "./address.route";
 
 
 
@@ -24,13 +25,15 @@ const clientRoutes = (app: Express): void => {
   
     app.use("/order", verifyToken, orderRoute);
   
-    app.use("/verify-phone", verifyToken, verifyPhoneRoute);
+    app.use("/verify-phone", verifyPhoneRoute);
   
     app.use("/account", verifyToken, accountRoutes);
 
     app.use("/rate", verifyToken, rateRoute);
 
     app.use(`/upload`, uploadRoute);
+
+    app.use(`/address`, verifyToken, addressRoute);
   };
 
 export default clientRoutes;

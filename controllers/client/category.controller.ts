@@ -95,7 +95,7 @@ export const getPrice = async(req: Request, res: Response) => {
     try {
         
         const objectPrice = await sequelize.query(`
-            SELECT MIN(products.price_unit) as min, MAX(products.price_unit) as max
+            SELECT MIN(products.price_unit * (1 - (products.discount or 0)/100)) as min, MAX(products.price_unit * (1 - (products.discount or 0)/100)) as max
             FROM products
         `, {
             type: QueryTypes.SELECT,
@@ -109,8 +109,8 @@ export const getPrice = async(req: Request, res: Response) => {
 
         return res.json({
             code: 200,
-            fromPrice: fromPrice,
-            toPrice: toPrice
+            fromPrice: parseInt(fromPrice),
+            toPrice: parseInt(toPrice) + 1
         })
 
     } catch (error) {

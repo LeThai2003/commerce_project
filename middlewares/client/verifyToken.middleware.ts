@@ -61,10 +61,11 @@ const refreshTokenHandler = async (token: string) => {
 };
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
-    if (req.headers["accesstoken"]) {
-        const accessToken = req.headers["accesstoken"];
-
+    let accessToken = req.headers["authorization"];
+    console.log(accessToken);
+    if (accessToken) {
         try {
+            accessToken = accessToken.split(" ")[1]
             const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
 
@@ -146,7 +147,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             } else {
                 return res.json({
                     code: 401,
-                    message: 'Token không hợp lệ. Từ chối truy cập'
+                    message: 'Token không hợp lệ. Từ chối truy cập ---'
                 });
             }
         }

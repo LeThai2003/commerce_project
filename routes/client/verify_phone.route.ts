@@ -1,5 +1,6 @@
 import express, {Router } from "express"
-import * as controller from "../../controllers/client/verify_phone.controller";
+import * as controller from "../../controllers/client/verifyPhone.controller";
+
 
 const router : Router = express.Router();
 

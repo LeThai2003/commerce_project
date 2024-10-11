@@ -94,7 +94,7 @@ exports.getProductCategory = getProductCategory;
 const getPrice = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const objectPrice = yield database_1.default.query(`
-            SELECT MIN(products.price_unit) as min, MAX(products.price_unit) as max
+            SELECT MIN(products.price_unit * (1 - (products.discount or 0)/100)) as min, MAX(products.price_unit * (1 - (products.discount or 0)/100)) as max
             FROM products
         `, {
             type: sequelize_1.QueryTypes.SELECT,
@@ -105,8 +105,8 @@ const getPrice = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const toPrice = objectPrice[0]["max"];
         return res.json({
             code: 200,
-            fromPrice: fromPrice,
-            toPrice: toPrice
+            fromPrice: parseInt(fromPrice),
+            toPrice: parseInt(toPrice) + 1
         });
     }
     catch (error) {
