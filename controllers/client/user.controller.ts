@@ -5,9 +5,10 @@ import User from "../../models/user.model";
 import Credential from "../../models/credential.model";
 import sendMail from "../../helpers/send-mail.helper";
 import VerificationToken from "../../models/verification-token.model";
-import { DATE, Op, QueryTypes } from "sequelize";
+import { DATE, Op, or, QueryTypes } from "sequelize";
 import sequelize from "../../configs/database";
-import { emit } from "process";
+import { generateRandomNumber } from "../../helpers/generate.helper";
+import ForgotPassword from "../../models/forgotPassword.model";
 
 
 //[POST] /user/login
@@ -70,11 +71,20 @@ export const login = async (req: Request, res: Response) => {
             expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         };
 
-        // console.log(verifycation_data);
+        // Trước khi lưu - Xóa hết token cũ của người đó đi
+        await VerificationToken.destroy({
+            where:{
+                credential_id: credential["credential_id"],
+                token_type: {
+                    [Op.or]: ["refresh", "access"]
+                }
+            }
+        })
+        // end Trước khi lưu - Xóa hết token cũ của người đó đi
 
         await VerificationToken.create(verifycation_data);
         await VerificationToken.create(refreshTokenData);
-
+        
         return res.json({
             code: 200,
             accessToken: accessToken,
@@ -137,27 +147,27 @@ export const register = async (req: Request, res: Response) => {
         const user = await User.create(data_user);
 
         
-        // sau khi lưu - xác thực email bằng JWT token
-        const verificationToken = jwt.sign({credential_id}, process.env.SECRET_KEY, {expiresIn: "24h"});
-        const verificationLink = `http://localhost:3000/user/verify-email?token=${verificationToken}`;
+        // // sau khi lưu - xác thực email bằng JWT token
+        // const verificationToken = jwt.sign({credential_id}, process.env.SECRET_KEY, {expiresIn: "24h"});
+        // const verificationLink = `http://localhost:3000/user/verify-email?token=${verificationToken}`;
 
-        const verifycation_data = {
-            credential_id: user.dataValues.credential_id,
-            token_type: "activation",
-            verif_token: verificationToken,
-            expire_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
-        };
+        // const verifycation_data = {
+        //     credential_id: user.dataValues.credential_id,
+        //     token_type: "activation",
+        //     verif_token: verificationToken,
+        //     expire_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        // };
 
-        console.log(verifycation_data);
+        // console.log(verifycation_data);
 
-        await VerificationToken.create(verifycation_data);
+        // await VerificationToken.create(verifycation_data);
 
-        const content = `<p>Please click the link to verify your email: <a href="${verificationLink}">Xác nhận</a></p>`;
-        sendMail(user.dataValues.email, 'Verify Email', content);
+        // const content = `<p>Please click the link to verify your email: <a href="${verificationLink}">Xác nhận</a></p>`;
+        // sendMail(user.dataValues.email, 'Verify Email', content);
 
         return res.json({ 
             code: 200,
-            message: 'Registration successful! Check your email to verify your account.' 
+            message: 'Registration successful! You can log in now' 
         });
     } catch (error) {
         return res.json({
@@ -238,36 +248,23 @@ export const verifyEmail = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
     try {
         // access token
-        const accessToken = req.headers["accesstoken"];
+        let accessToken = req.headers["authorization"].split(" ")[1];
 
-        await VerificationToken.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
+        const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
+        const { credential_id } = decoded;
+
+        await VerificationToken.destroy({
             where:{
-                verif_token: accessToken,
-                token_type: "access"
+                credential_id: credential_id,
+                token_type: {
+                    [Op.or] : ["access", "refresh"]
+                }
             }
         })
-
-        // refresh token
-
-        const refreshToken = req.headers["refreshtoken"];
-
-        await VerificationToken.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
-            where:{
-                verif_token: refreshToken,
-                token_type: "refresh"
-            }
-        })
-
-        console.log(accessToken);
-        console.log(refreshToken);
 
         return res.json({
             code: 200,
-            message: "User logged out successfully.",
+            message: "Đăng xuất tài khoản thành công",
         })
 
     } catch (error) {
@@ -285,43 +282,38 @@ export const forgotPassword = async (req: Request, res: Response) => {
         
         console.log(email);
 
-        const credential = await sequelize.query(`
-            SELECT credentials.credential_id 
-            FROM credentials JOIN users ON credentials.credential_id = users.credential_id
-            WHERE 
-                users.email = '${email}'
-            `, {
-                type: QueryTypes.SELECT,
-                raw: true
-            }
-        );
+        const emailExist = await User.findOne({
+            where: {
+                email: email
+            },
+            raw: true
+        });
+    
+        if(!emailExist)
+        {
+            return res.json({
+                code: 400,
+                message: "Email không tồn tại"
+            });
+        }
 
-        const credential_id = credential[0]["credential_id"];
+        const otp = generateRandomNumber(6);
 
-        console.log(credential_id);
+        // luu vao database
+        await ForgotPassword.create({
+            email: email,
+            otp: otp,
+            expiresAt: new Date(Date.now() + 5*60*1000)
+        });
+        
+        const content = `Mã OTP của bạn là <b>${otp}</b>. <i>Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã cho bất kỳ ai!</i>`;
+        sendMail(email, 'OTP FORGOT PASSWORD', content);
 
-        // xác thực email bằng JWT token
-        const verificationToken = jwt.sign({credential_id}, process.env.SECRET_KEY, {expiresIn: "24h"});
-        const verificationLink = `http://localhost:3000/user/password/otp?token=${verificationToken}`;
-
-        const verifycation_data = {
-            credential_id: credential_id,
-            token_type: "forgot_password",
-            verif_token: verificationToken,
-            expire_date: new Date(Date.now() + 5 * 60 * 1000)
-        };
-
-        // console.log(new Date(Date.now()));
-        // console.log(verifycation_data);
-
-        await VerificationToken.create(verifycation_data);
-
-        const content = `<p>Please click <a href="${verificationLink}">confirm</a> to reset your password. If it's not you, click report!</p>`;
-        sendMail(email, 'Confirm forgot password', content);
 
         return res.json({
             code: 200,
-            message: 'Email sent successfully! Check your email.' 
+            message: 'Email sent successfully! Check your email',
+            email: email
         });
     } catch (error) {
         return res.json({
@@ -334,72 +326,49 @@ export const forgotPassword = async (req: Request, res: Response) => {
 //[POST] /user/password/otp
 export const passwordOtp = async (req: Request, res: Response) => {
     try {
-        const token = req.query.token;
+        const email = req.body.email;
+        const otp = req.body.otp;
 
-        // xác định token là loại xác minh 
-        const isActiveToken = await VerificationToken.findOne({
-            where:{
-                verif_token: token,
-                token_type: "forgot_password",
-                expire_date: {
+        const forgotPassword = await ForgotPassword.findOne({
+            where: {
+                email: email,
+                otp: otp,
+                expiresAt: {
                     [Op.gt]: new Date(Date.now()),
-                }
-            },  
+                },
+                verify_otp: false
+            },
             raw: true
         });
 
-        if(!isActiveToken)
+        if(!forgotPassword)
         {
-            return res.json({
-                code: 401,
-                message: "Invalid token"
-            })
-        }
-
-        // end xác định token là loại xác minh hay đăng nhập
-
-        const decoded = jwt.verify(token, process.env.SECRET_KEY);
-        const {credential_id} = decoded;
-
-        const users = await sequelize.query(`
-            SELECT users.email 
-            FROM users JOIN credentials ON users.credential_id = credentials.credential_id
-            WHERE
-                credentials.credential_id = ${credential_id}
-            `, {
-                type: QueryTypes.SELECT,
-                raw: true
-        })
-
-        // console.log(users[0]["email"]);
-
-        await VerificationToken.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
-            where: {
-                verification_token_id: isActiveToken["verification_token_id"]
-            }
-        })
-
-        return res.json({
-            code: 200,
-            message: "OTP authentication successful! You can reset your password.",
-            email: users[0]["email"]
-        })
-    } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.json({ 
+            res.json({
                 code: 400,
-                message: "Token expired. Please request a resend of verification email."
-            });
+                message: "OTP không hợp lệ"
+            })
+            return;
         }
         else
         {
-            return res.json({
-                code: 400,
-                message: "Invalid or expired token",
-            });
+            await forgotPassword.update({
+                verify_otp: true
+            }, {
+                where: {
+                    forgot_password_id: forgotPassword["forgotPassword"]
+                }
+            })
         }
+
+        return res.json({
+            code: 200,
+            message: "OTP authentication successful! You can reset your password"
+        })
+    } catch (error) {
+        return res.json({
+            code: 500,
+            message: "Lỗi " + error
+        })
     }
 }
 
@@ -408,18 +377,6 @@ export const resetPassword = async (req: Request, res: Response) => {
     try {
         const {email, password, comfirmPassword} = req.body;
 
-        // kiểm tra tạm ở đây -- chưa làm trang validate dữ liệu
-        if(password !== comfirmPassword)
-        {
-            return res.json({ 
-                code: 401,
-                message: "Password and confirm password are not the same."
-            });
-        }
-
-        // mã hóa mật khẩu - lưu thông tin vào database 
-        const hashPassword = await bcrypt.hash(password, 10);
-
         const user = await User.findOne({
             where: {
                 email: email
@@ -427,7 +384,26 @@ export const resetPassword = async (req: Request, res: Response) => {
             raw: true
         });
 
+        if(!user)
+        {
+            return res.json({
+                code: 404,
+                message: "Người dùng không tồn tại"
+            })
+        }
         // console.log(user);
+
+        // kiểm tra tạm ở đây -- chưa làm trang validate dữ liệu
+        if(password !== comfirmPassword)
+        {
+            return res.json({ 
+                code: 401,
+                message: "Password and confirm password are not the same"
+            });
+        }
+
+        // mã hóa mật khẩu - lưu thông tin vào database 
+        const hashPassword = await bcrypt.hash(password, 10);
 
         await Credential.update({
             password: hashPassword,

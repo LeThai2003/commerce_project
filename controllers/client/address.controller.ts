@@ -21,7 +21,7 @@ export const index = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({
             code: 500,
-            message: "Lỗi đánh giá sao " + error
+            message: "Lỗi lấy địa chỉ " + error
         })
     }
 }
@@ -41,15 +41,41 @@ export const addAddress = async (req: Request, res: Response) => {
             });
         }
         
-        await Address.create({
-            address_name: address_name,
-            user_id: user["user_id"],
-            default_address: false,
+        const isUserExist = await Address.findOne({
+            where: {
+                user_id: user["user_id"]
+            },
+            raw: true
         });
+
+        if(isUserExist)
+        {
+            await Address.create({
+                address_name: address_name,
+                user_id: user["user_id"],
+                default_address: false,
+            });
+        }
+        else
+        {
+            await Address.create({
+                address_name: address_name,
+                user_id: user["user_id"],
+                default_address: true,
+            });
+        }
         
+        const addresses = await Address.findAll({
+            where: {
+                user_id: user["user_id"],
+            },
+            raw: true
+        })
+
         return res.json({
             code: 200,
-            message: "Thêm thành công"
+            message: "Thêm thành công",
+            data: addresses
         })
     } catch (error) {
         return res.json({
@@ -96,10 +122,18 @@ export const setDefaultAddess = async (req: Request, res: Response) => {
                 address_id: address_id 
             }
         });
+
+        const addresses = await Address.findAll({
+            where: {
+                user_id: user["user_id"],
+            },
+            raw: true
+        })
         
         return res.json({
             code: 200,
-            message: "Set default address successfullly"
+            message: "Cập nhật địa chỉ mặc định thành công",
+            data: addresses
         })
     } catch (error) {
         return res.json({

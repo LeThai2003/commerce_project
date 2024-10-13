@@ -10,10 +10,8 @@ const router : Router = express.Router();
 
 router.get("/", controller.index);
 
-router.patch(
+router.put(
     "/edit", 
-    upload.single('image_url'), 
-    uploadSingle, 
     controller.edit
 );
 

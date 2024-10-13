@@ -49,7 +49,7 @@ const sendOTP = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                     {
                         "destinations": [{ "to": phone }],
                         "from": "Shop...",
-                        "text": `Your OTP is: <b>${otp}</b>. Expired in 5 minutes`
+                        "text": `Your OTP is: ${otp}. Expired in 5 minutes`
                     }
                 ]
             });

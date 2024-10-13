@@ -18,7 +18,7 @@ router.post("/logout", controller.logout);
 
 router.post("/password/forgot", forgotPasswordValidation, controller.forgotPassword);
 
-router.get("/password/otp", controller.passwordOtp); // xác thực email -- forgot pass
+router.post("/password/otp", controller.passwordOtp); // xác thực email -- forgot pass
 
 router.post("/password/reset", resetPasswordValidation, controller.resetPassword);
 

@@ -62,10 +62,10 @@ const refreshTokenHandler = async (token: string) => {
 };
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
-    if (req.headers["accesstoken"]) {
-        const accessToken = req.headers["accesstoken"];
-
+    let accessToken = req.headers["authorization"];
+    if (accessToken) {
         try {
+            accessToken = accessToken.split(" ")[1]
             const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
 
@@ -87,7 +87,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             // Kiểm tra token có hợp lệ không
             const isValidToken = await VerificationToken.findOne({
                 where: {
-                    token_type: "access_admin",
+                    token_type: "access",
                     verif_token: accessToken,
                     expire_date: {
                         [Op.gt]: new Date(Date.now())
@@ -112,13 +112,26 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
                 raw: true
             });
 
-            res.locals.admin = user;
+            res.locals.user = user;
 
             next();
         } catch (error) {
             if (error instanceof TokenExpiredError) {
                 // Nếu token hết hạn, gọi hàm refreshToken
-                const refreshToken = req.headers["refreshtoken"] as string; 
+
+                const decoded = jwt.decode(accessToken);
+                
+                const { credential_id } = decoded;
+
+                const record = await VerificationToken.findOne({
+                    where: {
+                        credential_id: credential_id,
+                        token_type: "refresh",
+                    },
+                    raw: true,
+                });
+
+                const refreshToken = record["verif_token"];
 
                 if (refreshToken) 
                 {
@@ -126,14 +139,24 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 
                     if (refreshResult.code === 200) 
                     {
+                        res.setHeader('Access-Control-Expose-Headers', 'accesstoken');
                         res.setHeader('accesstoken', refreshResult.token);
+
+                        const user = await Admin.findOne({
+                            where: {
+                                credential_id: credential_id
+                            },
+                            raw: true
+                        });
+            
+                        res.locals.user = user;
+
                         next();
                     } 
                     else 
                     {
                         return res.json({
-                            code: refreshResult.code,
-                            message: refreshResult.message
+                            code: refreshResult.code
                         });
                     }
                 } 
@@ -147,7 +170,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             } else {
                 return res.json({
                     code: 401,
-                    message: 'Token không hợp lệ. Từ chối truy cập'
+                    message: 'Token không hợp lệ. Từ chối truy cập ---'
                 });
             }
         }

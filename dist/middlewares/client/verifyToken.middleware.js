@@ -65,11 +65,15 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
 const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     let accessToken = req.headers["authorization"];
     console.log(accessToken);
+    console.log("--------------------------");
     if (accessToken) {
         try {
             accessToken = accessToken.split(" ")[1];
             const decoded = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
+            console.log("--------------------------");
+            console.log(accessToken);
+            console.log(credential_id);
             const credential = yield credential_model_1.default.findOne({
                 where: {
                     credential_id: credential_id,
@@ -107,21 +111,38 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 raw: true
             });
             res.locals.user = user;
+            console.log("-----------5---------------");
             next();
         }
         catch (error) {
             if (error instanceof jsonwebtoken_2.TokenExpiredError) {
-                const refreshToken = req.headers["refreshtoken"];
+                const decoded = jsonwebtoken_1.default.decode(accessToken);
+                const { credential_id } = decoded;
+                const record = yield verification_token_model_1.default.findOne({
+                    where: {
+                        credential_id: credential_id,
+                        token_type: "refresh",
+                    },
+                    raw: true,
+                });
+                const refreshToken = record["verif_token"];
                 if (refreshToken) {
                     const refreshResult = yield refreshTokenHandler(refreshToken);
                     if (refreshResult.code === 200) {
+                        res.setHeader('Access-Control-Expose-Headers', 'accesstoken');
                         res.setHeader('accesstoken', refreshResult.token);
+                        const user = yield user_model_1.default.findOne({
+                            where: {
+                                credential_id: credential_id
+                            },
+                            raw: true
+                        });
+                        res.locals.user = user;
                         next();
                     }
                     else {
                         return res.json({
-                            code: refreshResult.code,
-                            message: refreshResult.message
+                            code: refreshResult.code
                         });
                     }
                 }
@@ -143,7 +164,7 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
     else {
         return res.json({
             code: 403,
-            message: 'Từ chối truy cập. Không có token'
+            message: 'Từ chối truy cập. Không có token----'
         });
     }
 });

@@ -36,8 +36,15 @@ export const edit = async (req: Request, res: Response) => {
     try {
         let user = res.locals.user;
 
+        console.log()
+
+        console.log(req.body);
+
         await User.update({
-            ...req.body
+            image_url: req.body.image_url as string,
+            first_name: req.body.firstName as string,
+            last_name: req.body.lastName as string,
+            phone: req.body.phone as string
         }, {
             where:{
                 user_id: user["user_id"],
@@ -58,7 +65,7 @@ export const edit = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({
             code: 400,
-            message: "Lỗi trang tài khoản"
+            message: "Lỗi cập nhật thông tin"
         })
     }
 }

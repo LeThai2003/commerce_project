@@ -36,6 +36,6 @@ router.post("/register", user_validation_1.registerValidation, controller.regist
 router.get("/verify-email", controller.verifyEmail);
 router.post("/logout", controller.logout);
 router.post("/password/forgot", user_validation_1.forgotPasswordValidation, controller.forgotPassword);
-router.get("/password/otp", controller.passwordOtp);
+router.post("/password/otp", controller.passwordOtp);
 router.post("/password/reset", user_validation_1.resetPasswordValidation, controller.resetPassword);
 exports.userRoutes = router;

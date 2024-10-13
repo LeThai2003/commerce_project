@@ -42,7 +42,7 @@ export const sendOTP = async (req: Request, res: Response) => {
                     {
                         "destinations": [{"to": phone}],  // Số điện thoại người dùng
                         "from": "Shop...",
-                        "text": `Your OTP is: <b>${otp}</b>. Expired in 5 minutes`  // Nội dung tin nhắn với mã OTP
+                        "text": `Your OTP is: ${otp}. Expired in 5 minutes`  // Nội dung tin nhắn với mã OTP
                     }
                 ]
             });

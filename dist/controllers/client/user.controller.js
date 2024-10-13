@@ -20,7 +20,8 @@ const credential_model_1 = __importDefault(require("../../models/credential.mode
 const send_mail_helper_1 = __importDefault(require("../../helpers/send-mail.helper"));
 const verification_token_model_1 = __importDefault(require("../../models/verification-token.model"));
 const sequelize_1 = require("sequelize");
-const database_1 = __importDefault(require("../../configs/database"));
+const generate_helper_1 = require("../../helpers/generate.helper");
+const forgotPassword_model_1 = __importDefault(require("../../models/forgotPassword.model"));
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.body);
     const { username, password } = req.body;
@@ -59,6 +60,14 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             verif_token: refreshToken,
             expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         };
+        yield verification_token_model_1.default.destroy({
+            where: {
+                credential_id: credential["credential_id"],
+                token_type: {
+                    [sequelize_1.Op.or]: ["refresh", "access"]
+                }
+            }
+        });
         yield verification_token_model_1.default.create(verifycation_data);
         yield verification_token_model_1.default.create(refreshTokenData);
         return res.json({
@@ -108,21 +117,9 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             image_url: image_url || ""
         };
         const user = yield user_model_1.default.create(data_user);
-        const verificationToken = jsonwebtoken_1.default.sign({ credential_id }, process.env.SECRET_KEY, { expiresIn: "24h" });
-        const verificationLink = `http://localhost:3000/user/verify-email?token=${verificationToken}`;
-        const verifycation_data = {
-            credential_id: user.dataValues.credential_id,
-            token_type: "activation",
-            verif_token: verificationToken,
-            expire_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
-        };
-        console.log(verifycation_data);
-        yield verification_token_model_1.default.create(verifycation_data);
-        const content = `<p>Please click the link to verify your email: <a href="${verificationLink}">Xác nhận</a></p>`;
-        (0, send_mail_helper_1.default)(user.dataValues.email, 'Verify Email', content);
         return res.json({
             code: 200,
-            message: 'Registration successful! Check your email to verify your account.'
+            message: 'Registration successful! You can log in now'
         });
     }
     catch (error) {
@@ -191,29 +188,20 @@ const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 exports.verifyEmail = verifyEmail;
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const accessToken = req.headers["accesstoken"];
-        yield verification_token_model_1.default.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
+        let accessToken = req.headers["authorization"].split(" ")[1];
+        const decoded = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
+        const { credential_id } = decoded;
+        yield verification_token_model_1.default.destroy({
             where: {
-                verif_token: accessToken,
-                token_type: "access"
+                credential_id: credential_id,
+                token_type: {
+                    [sequelize_1.Op.or]: ["access", "refresh"]
+                }
             }
         });
-        const refreshToken = req.headers["refreshtoken"];
-        yield verification_token_model_1.default.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
-            where: {
-                verif_token: refreshToken,
-                token_type: "refresh"
-            }
-        });
-        console.log(accessToken);
-        console.log(refreshToken);
         return res.json({
             code: 200,
-            message: "User logged out successfully.",
+            message: "Đăng xuất tài khoản thành công",
         });
     }
     catch (error) {
@@ -228,31 +216,30 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
     try {
         const email = req.body.email;
         console.log(email);
-        const credential = yield database_1.default.query(`
-            SELECT credentials.credential_id 
-            FROM credentials JOIN users ON credentials.credential_id = users.credential_id
-            WHERE 
-                users.email = '${email}'
-            `, {
-            type: sequelize_1.QueryTypes.SELECT,
+        const emailExist = yield user_model_1.default.findOne({
+            where: {
+                email: email
+            },
             raw: true
         });
-        const credential_id = credential[0]["credential_id"];
-        console.log(credential_id);
-        const verificationToken = jsonwebtoken_1.default.sign({ credential_id }, process.env.SECRET_KEY, { expiresIn: "24h" });
-        const verificationLink = `http://localhost:3000/user/password/otp?token=${verificationToken}`;
-        const verifycation_data = {
-            credential_id: credential_id,
-            token_type: "forgot_password",
-            verif_token: verificationToken,
-            expire_date: new Date(Date.now() + 5 * 60 * 1000)
-        };
-        yield verification_token_model_1.default.create(verifycation_data);
-        const content = `<p>Please click <a href="${verificationLink}">confirm</a> to reset your password. If it's not you, click report!</p>`;
-        (0, send_mail_helper_1.default)(email, 'Confirm forgot password', content);
+        if (!emailExist) {
+            return res.json({
+                code: 400,
+                message: "Email không tồn tại"
+            });
+        }
+        const otp = (0, generate_helper_1.generateRandomNumber)(6);
+        yield forgotPassword_model_1.default.create({
+            email: email,
+            otp: otp,
+            expiresAt: new Date(Date.now() + 5 * 60 * 1000)
+        });
+        const content = `Mã OTP của bạn là <b>${otp}</b>. <i>Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã cho bất kỳ ai!</i>`;
+        (0, send_mail_helper_1.default)(email, 'OTP FORGOT PASSWORD', content);
         return res.json({
             code: 200,
-            message: 'Email sent successfully! Check your email.'
+            message: 'Email sent successfully! Check your email',
+            email: email
         });
     }
     catch (error) {
@@ -265,79 +252,70 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.forgotPassword = forgotPassword;
 const passwordOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const token = req.query.token;
-        const isActiveToken = yield verification_token_model_1.default.findOne({
+        const email = req.body.email;
+        const otp = req.body.otp;
+        const forgotPassword = yield forgotPassword_model_1.default.findOne({
             where: {
-                verif_token: token,
-                token_type: "forgot_password",
-                expire_date: {
+                email: email,
+                otp: otp,
+                expiresAt: {
                     [sequelize_1.Op.gt]: new Date(Date.now()),
-                }
+                },
+                verify_otp: false
             },
             raw: true
         });
-        if (!isActiveToken) {
-            return res.json({
-                code: 401,
-                message: "Invalid token"
+        if (!forgotPassword) {
+            res.json({
+                code: 400,
+                message: "OTP không hợp lệ"
+            });
+            return;
+        }
+        else {
+            yield forgotPassword.update({
+                verify_otp: true
+            }, {
+                where: {
+                    forgot_password_id: forgotPassword["forgotPassword"]
+                }
             });
         }
-        const decoded = jsonwebtoken_1.default.verify(token, process.env.SECRET_KEY);
-        const { credential_id } = decoded;
-        const users = yield database_1.default.query(`
-            SELECT users.email 
-            FROM users JOIN credentials ON users.credential_id = credentials.credential_id
-            WHERE
-                credentials.credential_id = ${credential_id}
-            `, {
-            type: sequelize_1.QueryTypes.SELECT,
-            raw: true
-        });
-        yield verification_token_model_1.default.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
-            where: {
-                verification_token_id: isActiveToken["verification_token_id"]
-            }
-        });
         return res.json({
             code: 200,
-            message: "OTP authentication successful! You can reset your password.",
-            email: users[0]["email"]
+            message: "OTP authentication successful! You can reset your password"
         });
     }
     catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.json({
-                code: 400,
-                message: "Token expired. Please request a resend of verification email."
-            });
-        }
-        else {
-            return res.json({
-                code: 400,
-                message: "Invalid or expired token",
-            });
-        }
+        return res.json({
+            code: 500,
+            message: "Lỗi " + error
+        });
     }
 });
 exports.passwordOtp = passwordOtp;
 const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, password, comfirmPassword } = req.body;
-        if (password !== comfirmPassword) {
-            return res.json({
-                code: 401,
-                message: "Password and confirm password are not the same."
-            });
-        }
-        const hashPassword = yield bcrypt_1.default.hash(password, 10);
         const user = yield user_model_1.default.findOne({
             where: {
                 email: email
             },
             raw: true
         });
+        if (!user) {
+            return res.json({
+                code: 404,
+                message: "Người dùng không tồn tại"
+            });
+        }
+        if (password !== comfirmPassword) {
+            return res.json({
+                code: 401,
+                message: "Password and confirm password are not the same"
+            });
+        }
+        const hashPassword = yield bcrypt_1.default.hash(password, 10);
         yield credential_model_1.default.update({
             password: hashPassword,
         }, {

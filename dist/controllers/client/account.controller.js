@@ -41,7 +41,14 @@ exports.index = index;
 const edit = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = res.locals.user;
-        yield user_model_1.default.update(Object.assign({}, req.body), {
+        console.log();
+        console.log(req.body);
+        yield user_model_1.default.update({
+            image_url: req.body.image_url,
+            first_name: req.body.firstName,
+            last_name: req.body.lastName,
+            phone: req.body.phone
+        }, {
             where: {
                 user_id: user["user_id"],
             }
@@ -60,7 +67,7 @@ const edit = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (error) {
         return res.json({
             code: 400,
-            message: "Lỗi trang tài khoản"
+            message: "Lỗi cập nhật thông tin"
         });
     }
 });
