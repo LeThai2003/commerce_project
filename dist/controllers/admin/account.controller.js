@@ -120,80 +120,79 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.createPost = createPost;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(req.body);
+    const { username, password } = req.body;
     try {
-        const { username, password } = req.body;
         const credential = yield credential_model_1.default.findOne({
             where: {
                 username: username
             },
             raw: true
         });
+        if (!credential || credential["is_enabled"][0] !== 1) {
+            return res.json({
+                code: 403,
+                message: 'Tài khoản bị vô hiệu hóa'
+            });
+        }
         const isValidPassword = yield bcrypt_1.default.compare(password, credential["password"]);
         if (!isValidPassword) {
             return res.json({
-                code: 400,
-                message: 'Invalid password.'
-            });
-        }
-        if (!credential || credential["is_enabled"][0] !== 1) {
-            return res.json({
-                code: 400,
-                message: 'Account not enabled or invalid.'
+                code: 401,
+                message: 'Mật khẩu không đúng'
             });
         }
         const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
         const refreshToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
+        const token = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
         const verifycation_data = {
             credential_id: credential["credential_id"],
-            token_type: "access_admin",
+            token_type: "access",
             verif_token: accessToken,
             expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
         };
         const refreshTokenData = {
             credential_id: credential["credential_id"],
-            token_type: "refresh_admin",
+            token_type: "refresh",
             verif_token: refreshToken,
             expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         };
+        yield verification_token_model_1.default.destroy({
+            where: {
+                credential_id: credential["credential_id"],
+                token_type: {
+                    [sequelize_1.Op.or]: ["refresh", "access"]
+                }
+            }
+        });
         yield verification_token_model_1.default.create(verifycation_data);
         yield verification_token_model_1.default.create(refreshTokenData);
         return res.json({
             code: 200,
-            message: "Đăng nhập thành công",
             accessToken: accessToken,
             refreshToken: refreshToken,
         });
     }
     catch (error) {
         return res.json({
-            code: 400,
-            message: "Lỗi đăng nhập" + error
+            code: "400",
+            message: 'Error ( login ): ',
         });
     }
 });
 exports.login = login;
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const accessToken = req.headers["accesstoken"];
-        yield verification_token_model_1.default.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
+        const accessToken = req.headers["authorization"].split(" ")[1];
+        const credential_id = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
+        yield verification_token_model_1.default.destroy({
             where: {
-                verif_token: accessToken,
-                token_type: "access_admin"
+                credential_id: credential_id,
+                token_type: {
+                    [sequelize_1.Op.or]: ["access", "refresh"]
+                }
             }
         });
-        const refreshToken = req.headers["refreshtoken"];
-        yield verification_token_model_1.default.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
-            where: {
-                verif_token: refreshToken,
-                token_type: "refresh_admin"
-            }
-        });
-        console.log(accessToken);
-        console.log(refreshToken);
         return res.json({
             code: 200,
             message: "User logged out successfully.",

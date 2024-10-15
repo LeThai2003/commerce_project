@@ -12,8 +12,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.detail = exports.like = exports.index = void 0;
+exports.wishlist = exports.detail = exports.like = exports.index = void 0;
 const product_model_1 = __importDefault(require("../../models/product.model"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const sequelize_1 = require("sequelize");
 const convert_to_slug_helper_1 = require("../../helpers/convert-to-slug.helper");
 const pagination_helper_1 = require("../../helpers/pagination.helper");
@@ -214,6 +215,42 @@ exports.like = like;
 const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { productId } = req.params;
+        console.log("----------------------------------------");
+        const accessToken = req.headers["authorization"].split(" ")[1];
+        console.log(accessToken);
+        let like = false;
+        if (accessToken) {
+            const decoded = jsonwebtoken_1.default.decode(accessToken);
+            const { credential_id } = decoded;
+            const user = yield database_1.default.query(`
+                select users.user_id
+                FROM users JOIN credentials on users.credential_id = credentials.credential_id
+                WHERE credentials.credential_id = ${credential_id}
+            `, {
+                raw: true,
+                type: sequelize_1.QueryTypes.SELECT
+            });
+            console.log(user[0]["user_id"]);
+            const record = yield database_1.default.query(`
+                select * 
+                FROM wishlist JOIN users on wishlist.user_id = users.user_id and wishlist.user_id = ${user[0]["user_id"]}
+                JOIN products ON products.product_id = wishlist.product_id and wishlist.product_id = ${productId}
+            `, {
+                raw: true,
+                type: sequelize_1.QueryTypes.SELECT
+            });
+            if (record) {
+                like = true;
+            }
+            console.log(`
+                select users.user_id
+                FROM users JOIN credentials on users.credential_id = credentials.credential_id
+                JOIN verification_tokens on verification_tokens.credential_id = credentials.credential_id
+                WHERE verification_tokens.verif_token = '${accessToken}'
+            `);
+        }
+        ;
+        const user = 11;
         const product = yield product_model_1.default.findOne({
             attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
             where: {
@@ -221,6 +258,7 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             },
             raw: true
         });
+        product["newPrice"] = Math.floor((product["price_unit"] * (1 - (product["discount"] || 0) * 100)));
         const countQuantitySold = yield database_1.default.query(`
             SELECT SUM(oi.ordered_quantity) AS total_quantity
             FROM order_items oi
@@ -244,7 +282,8 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             message: "Load dữ liệu chi tiết sản phẩm thành công",
             data: product,
             quantityProductSold: parseInt(countQuantitySold[0]["total_quantity"]) || 0,
-            rating: parseFloat(ratingAVG[0]["rating"]) || 0
+            rating: parseFloat(ratingAVG[0]["rating"]) || 0,
+            like: like
         });
     }
     catch (error) {
@@ -255,3 +294,42 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.detail = detail;
+const wishlist = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let user = res.locals.user;
+        const wishlist = yield wishlist_model_1.default.findAll({
+            where: {
+                user_id: user["user_id"]
+            },
+            raw: true
+        });
+        let ids = wishlist.map(item => { return item["product_id"]; });
+        console.log(ids);
+        console.log(wishlist);
+        const dataProductsWishlist = yield product_model_1.default.findAll({
+            where: {
+                product_id: {
+                    [sequelize_1.Op.in]: ids,
+                }
+            },
+            attributes: { exclude: ["createdAt", "updatedAt", "deleted",] },
+            raw: true
+        });
+        const objectPagination = (0, pagination_helper_1.paginationHelper)(req, dataProductsWishlist.length);
+        const paginatedProductsWishlist = dataProductsWishlist.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
+        return res.json({
+            code: 200,
+            message: "Thành công!",
+            data: paginatedProductsWishlist,
+            totalPage: objectPagination["totalPage"],
+            pageNow: objectPagination["page"],
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Thất bại " + error
+        });
+    }
+});
+exports.wishlist = wishlist;

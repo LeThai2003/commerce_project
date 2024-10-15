@@ -29,7 +29,7 @@ const clientRoutes = (app: Express): void => {
   
     app.use("/account", verifyToken, accountRoutes);
 
-    app.use("/rate", verifyToken, rateRoute);
+    app.use("/rate", rateRoute);
 
     app.use(`/upload`, uploadRoute);
 

@@ -34,7 +34,9 @@ const upload = (0, multer_1.default)();
 const uploadToCloud_1 = require("../../middlewares/admin/uploadToCloud");
 const products_validate_1 = require("../../validations/admin/products.validate");
 const router = express_1.default.Router();
+router.get("/", controller.index);
 router.get("/create", controller.create);
+router.get("/:product_id", controller.detail);
 router.get("/create", controller.create);
 router.post("/create", upload.fields([
     { name: 'image_url', maxCount: 5 }

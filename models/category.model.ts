@@ -24,6 +24,11 @@ const Category = sequelize.define("Category", {
       type: DataTypes.STRING(500),
       allowNull: true,
     },
+    status:{
+      type: DataTypes.STRING,
+      defaultValue: "active",
+      allowNull: false,
+    },
     deleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false, // Đặt giá trị mặc định là false

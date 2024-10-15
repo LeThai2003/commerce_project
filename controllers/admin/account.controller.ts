@@ -123,9 +123,10 @@ export const createPost = async (req: Request, res: Response) => {
 
 //[POST] /admin/accounts/login
 export const login = async (req: Request, res: Response) => {
-    try {
-        const {username, password} = req.body;
+    console.log(req.body);
+    const {username, password} = req.body;
 
+    try {
         const credential = await Credential.findOne({
             where: {
                 username: username
@@ -136,24 +137,23 @@ export const login = async (req: Request, res: Response) => {
         // console.log(credential);
         // console.log(credential["is_enabled"][0]); 
 
+        if (!credential || credential["is_enabled"][0] !== 1) {
+            return res.json({ 
+                code: 403,
+                message: 'Tài khoản bị vô hiệu hóa' 
+            });
+        }
+
         const isValidPassword = await bcrypt.compare(password, credential["password"]);
 
         if(!isValidPassword)
         {
             return res.json(
-                { 
-                    code: 400,
-                    message: 'Invalid password.' 
-                });
-        }
-
-        if (!credential || credential["is_enabled"][0] !== 1) {
-            return res.json({ 
-                code: 400,
-                message: 'Account not enabled or invalid.' 
+            { 
+                code: 401,
+                message: 'Mật khẩu không đúng' 
             });
         }
-
 
         // Tạo access token
         const accessToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
@@ -161,35 +161,49 @@ export const login = async (req: Request, res: Response) => {
         // Tạo refresh token
         const refreshToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
 
+
+        const token = jwt.sign({ credential_id: credential["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '12h' });
+
         // lưu token lại
         const verifycation_data = {
             credential_id: credential["credential_id"],
-            token_type: "access_admin",
+            token_type: "access",
             verif_token: accessToken,
             expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
         };
 
+
         const refreshTokenData = {
             credential_id: credential["credential_id"],
-            token_type: "refresh_admin",
+            token_type: "refresh",
             verif_token: refreshToken,
             expire_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         };
 
+        // Trước khi lưu - Xóa hết token cũ của người đó đi
+        await VerificationToken.destroy({
+            where:{
+                credential_id: credential["credential_id"],
+                token_type: {
+                    [Op.or]: ["refresh", "access"]
+                }
+            }
+        })
+        // end Trước khi lưu - Xóa hết token cũ của người đó đi
+
         await VerificationToken.create(verifycation_data);
         await VerificationToken.create(refreshTokenData);
-
-
+        
         return res.json({
             code: 200,
-            message: "Đăng nhập thành công",
             accessToken: accessToken,
             refreshToken: refreshToken,
         });
+
     } catch (error) {
-        return res.json({
-            code: 400,
-            message: "Lỗi đăng nhập" +error
+        return res.json({ 
+            code: "400",
+            message: 'Error ( login ): ', 
         });
     }
 }
@@ -198,32 +212,18 @@ export const login = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
     try {
         // access token
-        const accessToken = req.headers["accesstoken"];
+        const accessToken = req.headers["authorization"].split(" ")[1];
 
-        await VerificationToken.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
-            where:{
-                verif_token: accessToken,
-                token_type: "access_admin"
+        const credential_id = jwt.verify(accessToken, process.env.SECRET_KEY);
+
+        await VerificationToken.destroy({
+            where: {
+                credential_id: credential_id,
+                token_type: {
+                    [Op.or]: ["access", "refresh"]
+                }
             }
         })
-
-        // refresh token
-
-        const refreshToken = req.headers["refreshtoken"];
-
-        await VerificationToken.update({
-            expire_date: '2023-01-01 00:00:00'
-        }, {
-            where:{
-                verif_token: refreshToken,
-                token_type: "refresh_admin"
-            }
-        })
-
-        console.log(accessToken);
-        console.log(refreshToken);
 
         return res.json({
             code: 200,
@@ -237,7 +237,7 @@ export const logout = async (req: Request, res: Response) => {
     }
 }
 
-//[POST] /user/password
+//[POST] /user/password/forgot
 export const forgotPassword = async (req: Request, res: Response) => {
     try {
         const email = req.body.email;

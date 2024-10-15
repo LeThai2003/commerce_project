@@ -11,7 +11,7 @@ router.get("/:productId", controller.detail);
 
 router.patch("/like/:type/:productId",verifyToken, controller.like);
 
-
+router.get("/list/favorite", verifyToken, controller.wishlist);
 
 
 export const productRoute : Router = router;

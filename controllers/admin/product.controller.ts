@@ -3,8 +3,195 @@ import Category from "../../models/category.model";
 import { createTreeHelper } from "../../helpers/create-tree.helper";
 import Product from "../../models/product.model";
 import { json } from "body-parser";
+import { paginationHelper } from "../../helpers/pagination.helper";
+import { Op, QueryTypes } from "sequelize";
+import sequelize from "../../configs/database";
+import { convertToSlug } from "../../helpers/convert-to-slug.helper";
 
 
+//[GET] /product
+export const index = async(req: Request, res: Response) => {
+    try {
+        
+        let find = {
+            status: "active",
+            deleted: false,
+        };
+
+        let category_id = req.query["category_id"] as string;
+        if(category_id)
+        {
+            let ids = await sequelize.query(`
+                WITH RECURSIVE category_hierarchy AS (
+                    SELECT category_id, parent_category_id, category_title
+                    FROM categories
+                    WHERE category_id = ${parseInt(category_id)} 
+    
+                    UNION ALL
+    
+                    SELECT c.category_id, c.parent_category_id, c.category_title
+                    FROM categories c
+                    INNER JOIN category_hierarchy ch ON c.parent_category_id = ch.category_id
+                )
+                SELECT p.product_id
+                FROM products p
+                WHERE p.category_id IN (SELECT category_id FROM category_hierarchy);
+            `, {
+                raw: true,
+                type: QueryTypes.SELECT
+            });
+    
+            ids = ids.map(item => {return item["product_id"]});
+
+            find["product_id"] = {
+                [Op.in]: ids
+            }
+        }
+
+        // sort 
+        const sort: [string, string][] = [];
+
+        if (req.query["sortKey"] && req.query["sortValue"]) {
+            const sortKey = req.query["sortKey"] as string;
+            const sortValue = req.query["sortValue"];
+
+            if (typeof sortValue === 'string') {
+                const formattedSortValue = sortValue.toUpperCase();
+                sort.push([sortKey, formattedSortValue]);
+            } else {
+                console.error('sortValue is not a string');
+            }
+        }
+
+        // filter price
+        const fromPrice = parseInt(req.query["fromPrice"] as string) || 0;
+        const toPrice = parseInt(req.query["toPrice"] as string) || 0;
+        if (fromPrice && toPrice) {
+            
+            find["price_unit"] = {
+                [Op.and]: [
+                    { [Op.gte]: fromPrice },
+                    { [Op.lte]: toPrice },
+                ]
+            };
+        }
+
+        // search with title
+        if (req.query["searchKey"]) {
+            const titleFromSearh = req.query["searchKey"] as string;
+            if (typeof titleFromSearh === "string") {
+                let title = convertToSlug(titleFromSearh.toLowerCase());
+                find["slug"] = { [Op.like]: `%${title}%` };
+            }
+        }
+
+        // Lấy tất cả sản phẩm trước khi phân trang
+        let products = await Product.findAll({
+            where: find,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
+            order: sort,
+            raw: true,
+        });
+
+        console.log("----------------------------------------")
+
+        // ---- giá mới + đếm số lượng sản phẩm đã bán + rating ---
+        for (const item of products) {
+            const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
+            item["newPrice"] = newPrice;
+
+            const countQuantitySale = await sequelize.query(`
+                SELECT SUM(order_items.ordered_quantity) AS total_quantity_sold
+                FROM orders
+                JOIN payments ON orders.order_id = payments.order_id
+                JOIN order_items ON order_items.order_id = orders.order_id
+                WHERE payments.payment_status = 'Đã giao'
+                AND order_items.product_id = ${item["product_id"]};
+            `, {
+                type: QueryTypes.SELECT,
+                raw: true
+            });
+
+            item["total_quantity_sold"] = parseInt(countQuantitySale[0]["total_quantity_sold"]) || 0;
+
+            const ratingAVG = await sequelize.query(`
+                SELECT AVG(rate.star) as rating 
+                FROM rate
+                WHERE rate.product_id = ${item["product_id"]}
+            `, {
+                raw: true,
+                type: QueryTypes.SELECT
+            });
+
+            console.log(parseFloat(ratingAVG[0]["rating"]))
+
+            item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0
+        }
+
+        
+        
+
+    
+
+        // Sau khi đã lọc xong -> phân trang
+        const countProducts = products.length;
+        const objectPagination = paginationHelper(req, countProducts);
+
+        // Áp dụng phân trang
+        const paginatedProducts = products.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
+
+        // console.log(paginatedProducts);
+
+
+        return res.json({
+            code: 200,
+            message: "load dữ liệu thành công",
+            data: paginatedProducts,
+            totalPage: objectPagination["totalPage"],
+            pageNow: objectPagination["page"],
+            fromPrice: fromPrice,
+            toPrice: toPrice
+        })
+
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Lỗi load create category"
+        })
+    }
+}
+
+
+
+
+//[GET] /detail/:product_id
+export const detail = async(req: Request, res: Response) => {
+    try {
+        
+        const product_id = req.params.product_id as string;
+
+        const product = await Product.findOne(
+            {
+                where:{
+                product_id: product_id,
+                deleted: false
+            },
+            raw: true
+        })
+
+        return res.json({
+            code: 200,
+            message: "load dữ liệu thành công",
+            data: product,
+        })
+
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Lỗi load create category"
+        })
+    }
+}
 
 //[GET] /product/create.js
 export const create = async(req: Request, res: Response) => {
@@ -159,6 +346,8 @@ export const edit = async(req: Request, res: Response) => {
 //[PATCH] /product/edit/:product_id
 export const editPost = async(req: Request, res: Response) => {
     try {
+
+        console.log(req.body)
 
         const product_id = req.params["product_id"];
 

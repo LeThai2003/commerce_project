@@ -53,7 +53,7 @@ export const getProductCategory = async(req: Request, res: Response) => {
                 WITH RECURSIVE category_hierarchy AS (
                     SELECT category_id, parent_category_id, category_title
                     FROM categories
-                    WHERE category_id = ${parseInt(category_id)}  -- danh mục gốc mà bạn click vào
+                    WHERE category_id = ${parseInt(category_id)} 
 
                     UNION ALL
 

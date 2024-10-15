@@ -1,11 +1,14 @@
 import { Express, Request, Response } from "express";
 import Product from "../../models/product.model";
+import jwt from "jsonwebtoken";
+import store from "store";
 import { Op, QueryTypes } from "sequelize";
 import { convertToSlug } from "../../helpers/convert-to-slug.helper";
 import { paginationHelper } from "../../helpers/pagination.helper";
 import User from "../../models/user.model";
 import Wishlist from "../../models/wishlist.model";
 import sequelize from "../../configs/database";
+
 
 
 //[GET] /product/index.js
@@ -257,6 +260,54 @@ export const like = async (req: Request, res: Response) => {
 export const detail = async (req: Request, res: Response) => {
     try {
         const {productId} = req.params;
+
+        console.log("----------------------------------------")
+        
+        const accessToken = req.headers["authorization"].split(" ")[1];
+
+        console.log(accessToken)
+        
+        let like = false;
+
+        if(accessToken)
+        {
+            const decoded = jwt.decode(accessToken);
+            const { credential_id } = decoded;
+
+            const user = await sequelize.query(`
+                select users.user_id
+                FROM users JOIN credentials on users.credential_id = credentials.credential_id
+                WHERE credentials.credential_id = ${credential_id}
+            `, {
+                raw: true,
+                type: QueryTypes.SELECT
+            })
+
+            console.log(user[0]["user_id"])
+
+            const record = await sequelize.query(`
+                select * 
+                FROM wishlist JOIN users on wishlist.user_id = users.user_id and wishlist.user_id = ${user[0]["user_id"]}
+                JOIN products ON products.product_id = wishlist.product_id and wishlist.product_id = ${productId}
+            `, {
+                raw: true,
+                type: QueryTypes.SELECT
+            })
+
+            if(record)
+            {
+                like = true
+            }
+
+            console.log(`
+                select users.user_id
+                FROM users JOIN credentials on users.credential_id = credentials.credential_id
+                JOIN verification_tokens on verification_tokens.credential_id = credentials.credential_id
+                WHERE verification_tokens.verif_token = '${accessToken}'
+            `)
+        };
+
+        const user = 11;
         
         const product = await Product.findOne({
             attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
@@ -265,6 +316,8 @@ export const detail = async (req: Request, res: Response) => {
             },
             raw: true
         })
+
+        product["newPrice"] = Math.floor((product["price_unit"] * (1 - (product["discount"] || 0) * 100)));
 
         const countQuantitySold = await sequelize.query(`
             SELECT SUM(oi.ordered_quantity) AS total_quantity
@@ -286,14 +339,15 @@ export const detail = async (req: Request, res: Response) => {
         `, {
             raw: true,
             type: QueryTypes.SELECT
-        })
+        });
 
         return res.json({
             code: 200,
             message: "Load dữ liệu chi tiết sản phẩm thành công",
             data: product,
             quantityProductSold: parseInt(countQuantitySold[0]["total_quantity"]) || 0,
-            rating: parseFloat(ratingAVG[0]["rating"]) || 0
+            rating: parseFloat(ratingAVG[0]["rating"]) || 0,
+            like: like
         })
     } catch (error) {
         return res.json({
@@ -303,3 +357,51 @@ export const detail = async (req: Request, res: Response) => {
     }
 }
 
+//[GET] /products/wishlist
+export const wishlist = async (req: Request, res: Response) => {
+    try {
+        let user = res.locals.user;
+        
+        const wishlist = await Wishlist.findAll({
+            where: {
+                user_id: user["user_id"]
+            },
+            raw: true
+        });
+
+        let ids = wishlist.map(item => {return item["product_id"]});
+
+        console.log(ids);
+
+        console.log(wishlist);
+
+        const dataProductsWishlist = await Product.findAll({
+            where: {
+                product_id: {
+                    [Op.in]: ids,
+                }
+            },
+            attributes:{exclude: ["createdAt", "updatedAt", "deleted",]},
+            raw: true
+        })
+
+        const objectPagination = paginationHelper(req, dataProductsWishlist.length);
+
+        // Áp dụng phân trang
+        const paginatedProductsWishlist = dataProductsWishlist.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
+
+
+        return res.json({
+            code: 200,
+            message: "Thành công!",
+            data: paginatedProductsWishlist,
+            totalPage: objectPagination["totalPage"],
+            pageNow: objectPagination["page"],
+        })
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Thất bại " + error
+        })
+    }
+}

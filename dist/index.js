@@ -34,6 +34,6 @@ app.use(body_parser_1.default.urlencoded({ extended: false }));
 app.use('/tinymce', express_1.default.static(path_1.default.join(__dirname, 'node_modules', 'tinymce')));
 (0, index_route_1.default)(app);
 (0, index_route_2.default)(app);
-app.listen((port), () => {
+app.listen(3000, '0.0.0.0', () => {
     console.log("Đang chạy trên cổng: " + port);
 });

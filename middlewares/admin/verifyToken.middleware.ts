@@ -20,7 +20,7 @@ const refreshTokenHandler = async (token: string) => {
         const tokenData = await VerificationToken.findOne({
             where: {
                 verif_token: token,
-                token_type: "refresh_admin",
+                token_type: "refresh",
                 expire_date: {
                     [Op.gt]: new Date(Date.now())
                 }
@@ -41,7 +41,7 @@ const refreshTokenHandler = async (token: string) => {
         // lưu access token mới vào cơ sở dữ liệu
         const verificationData = {
             credential_id: tokenData["credential_id"],
-            token_type: "access_admin",
+            token_type: "access",
             verif_token: newAccessToken,
             expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000) // 12 hours
         };
@@ -63,11 +63,17 @@ const refreshTokenHandler = async (token: string) => {
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     let accessToken = req.headers["authorization"];
+    console.log(accessToken);
+    console.log("--------------------------");
     if (accessToken) {
         try {
             accessToken = accessToken.split(" ")[1]
             const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
+
+            console.log("--------------------------");
+            console.log(accessToken);
+            console.log(credential_id);
 
             const credential = await Credential.findOne({
                 where: {
@@ -105,14 +111,16 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 
             req["credential_id"] = credential_id;
 
-            const user = await Admin.findOne({
+            const admin = await Admin.findOne({
                 where: {
                     credential_id: credential["credential_id"]
                 },
                 raw: true
             });
 
-            res.locals.user = user;
+            res.locals.admin = admin;
+
+            console.log("-----------5---------------");
 
             next();
         } catch (error) {
@@ -142,14 +150,14 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
                         res.setHeader('Access-Control-Expose-Headers', 'accesstoken');
                         res.setHeader('accesstoken', refreshResult.token);
 
-                        const user = await Admin.findOne({
+                        const admin = await Admin.findOne({
                             where: {
                                 credential_id: credential_id
                             },
                             raw: true
                         });
             
-                        res.locals.user = user;
+                        res.locals.admin = admin;
 
                         next();
                     } 
@@ -177,7 +185,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     } else {
         return res.json({
             code: 403,
-            message: 'Từ chối truy cập. Không có token'
+            message: 'Từ chối truy cập. Không có token----'
         });
     }
 };

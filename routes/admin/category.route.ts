@@ -9,6 +9,10 @@ import { createProductValidation } from "../../validations/admin/products.valida
 
 const router : Router = express.Router();
 
+router.get("/", controller.index);
+
+router.get("/:category_id", controller.productsOfCategory);
+
 router.get("/create", controller.create);
 
 router.post(

@@ -58,6 +58,6 @@ app.use('/tinymce', express.static(path.join(__dirname, 'node_modules', 'tinymce
 clientRoutes(app);
 adminRoutes(app);
 
-app.listen((port), () => {
+app.listen(3000, '0.0.0.0', () => {
     console.log("Đang chạy trên cổng: " + port);
 });

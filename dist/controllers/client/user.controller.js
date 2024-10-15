@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetPassword = exports.passwordOtp = exports.forgotPassword = exports.logout = exports.verifyEmail = exports.register = exports.login = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const jsonwebtoken_2 = require("jsonwebtoken");
 const user_model_1 = __importDefault(require("../../models/user.model"));
 const credential_model_1 = __importDefault(require("../../models/credential.model"));
 const send_mail_helper_1 = __importDefault(require("../../helpers/send-mail.helper"));
@@ -187,27 +188,52 @@ const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.verifyEmail = verifyEmail;
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        let accessToken = req.headers["authorization"].split(" ")[1];
-        const decoded = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
-        const { credential_id } = decoded;
-        yield verification_token_model_1.default.destroy({
-            where: {
-                credential_id: credential_id,
-                token_type: {
-                    [sequelize_1.Op.or]: ["access", "refresh"]
+    let accessToken = req.headers["authorization"];
+    if (accessToken) {
+        try {
+            accessToken = accessToken.split(" ")[1];
+            const decoded = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
+            const { credential_id } = decoded;
+            yield verification_token_model_1.default.destroy({
+                where: {
+                    credential_id: credential_id,
+                    token_type: {
+                        [sequelize_1.Op.or]: ["access", "refresh"]
+                    }
                 }
+            });
+            return res.json({
+                code: 200,
+                message: "Đăng xuất tài khoản thành công",
+            });
+        }
+        catch (error) {
+            if (error instanceof jsonwebtoken_2.TokenExpiredError) {
+                const decoded = jsonwebtoken_1.default.decode(accessToken);
+                const { credential_id } = decoded;
+                yield verification_token_model_1.default.destroy({
+                    where: {
+                        credential_id: credential_id,
+                        token_type: {
+                            [sequelize_1.Op.or]: ["access", "refresh"]
+                        }
+                    }
+                });
+                return res.json({
+                    code: 200,
+                    message: "Đăng xuất tài khoản thành công",
+                });
             }
-        });
-        return res.json({
-            code: 200,
-            message: "Đăng xuất tài khoản thành công",
-        });
+            return res.json({
+                code: 400,
+                message: "Error - logout"
+            });
+        }
     }
-    catch (error) {
+    else {
         return res.json({
             code: 400,
-            message: "Error - logout"
+            message: "không có accesstoken được truyền lên"
         });
     }
 });

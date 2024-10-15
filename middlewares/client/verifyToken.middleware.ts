@@ -16,6 +16,9 @@ const refreshTokenHandler = async (token: string) => {
     }
 
     try {
+
+        console.log("đi vào đây");
+
         const tokenData = await VerificationToken.findOne({
             where: {
                 verif_token: token,
@@ -33,6 +36,14 @@ const refreshTokenHandler = async (token: string) => {
                 message: "Token không hợp lệ"
             };
         }
+
+        // xóa accessToken cũ 
+        await VerificationToken.destroy({
+            where: {
+                credential_id: tokenData["credential_id"],
+                token_type: "access"
+            }
+        })
 
         // Tạo accessToken
         const newAccessToken = jwt.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });

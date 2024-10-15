@@ -30,7 +30,7 @@ const Credential = database_1.default.define("Credential", {
     },
     is_enabled: {
         type: sequelize_1.DataTypes.BOOLEAN,
-        defaultValue: false,
+        defaultValue: true,
     }
 }, {
     timestamps: true,

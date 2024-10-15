@@ -22,7 +22,7 @@ const clientRoutes = (app) => {
     app.use("/order", verifyToken_middleware_1.default, order_route_1.orderRoute);
     app.use("/verify-phone", verify_phone_route_1.verifyPhoneRoute);
     app.use("/account", verifyToken_middleware_1.default, account_route_1.accountRoutes);
-    app.use("/rate", verifyToken_middleware_1.default, rate_route_1.rateRoute);
+    app.use("/rate", rate_route_1.rateRoute);
     app.use(`/upload`, upload_route_1.uploadRoute);
     app.use(`/address`, verifyToken_middleware_1.default, address_route_1.addressRoute);
 };

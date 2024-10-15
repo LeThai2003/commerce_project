@@ -34,4 +34,5 @@ const router = express_1.default.Router();
 router.get("/", controller.index);
 router.get("/:productId", controller.detail);
 router.patch("/like/:type/:productId", verifyToken_middleware_1.default, controller.like);
+router.get("/list/favorite", verifyToken_middleware_1.default, controller.wishlist);
 exports.productRoute = router;

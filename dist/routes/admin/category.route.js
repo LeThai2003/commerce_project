@@ -33,6 +33,8 @@ const multer_1 = __importDefault(require("multer"));
 const upload = (0, multer_1.default)();
 const uploadToCloud_1 = require("../../middlewares/admin/uploadToCloud");
 const router = express_1.default.Router();
+router.get("/", controller.index);
+router.get("/:category_id", controller.productsOfCategory);
 router.get("/create", controller.create);
 router.post("/create", upload.single('image_url'), uploadToCloud_1.uploadSingle, controller.createPost);
 router.get("/edit/:category_id", controller.edit);

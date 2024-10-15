@@ -26,6 +26,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
         };
     }
     try {
+        console.log("đi vào đây");
         const tokenData = yield verification_token_model_1.default.findOne({
             where: {
                 verif_token: token,
@@ -42,6 +43,12 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
                 message: "Token không hợp lệ"
             };
         }
+        yield verification_token_model_1.default.destroy({
+            where: {
+                credential_id: tokenData["credential_id"],
+                token_type: "access"
+            }
+        });
         const newAccessToken = jsonwebtoken_1.default.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
         const verificationData = {
             credential_id: tokenData["credential_id"],

@@ -29,7 +29,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
         const tokenData = yield verification_token_model_1.default.findOne({
             where: {
                 verif_token: token,
-                token_type: "refresh_admin",
+                token_type: "refresh",
                 expire_date: {
                     [sequelize_1.Op.gt]: new Date(Date.now())
                 }
@@ -45,7 +45,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
         const newAccessToken = jsonwebtoken_1.default.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
         const verificationData = {
             credential_id: tokenData["credential_id"],
-            token_type: "access_admin",
+            token_type: "access",
             verif_token: newAccessToken,
             expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
         };
@@ -64,11 +64,16 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
 });
 const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     let accessToken = req.headers["authorization"];
+    console.log(accessToken);
+    console.log("--------------------------");
     if (accessToken) {
         try {
             accessToken = accessToken.split(" ")[1];
             const decoded = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
+            console.log("--------------------------");
+            console.log(accessToken);
+            console.log(credential_id);
             const credential = yield credential_model_1.default.findOne({
                 where: {
                     credential_id: credential_id,
@@ -99,13 +104,14 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 });
             }
             req["credential_id"] = credential_id;
-            const user = yield admin_model_1.default.findOne({
+            const admin = yield admin_model_1.default.findOne({
                 where: {
                     credential_id: credential["credential_id"]
                 },
                 raw: true
             });
-            res.locals.user = user;
+            res.locals.admin = admin;
+            console.log("-----------5---------------");
             next();
         }
         catch (error) {
@@ -125,13 +131,13 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                     if (refreshResult.code === 200) {
                         res.setHeader('Access-Control-Expose-Headers', 'accesstoken');
                         res.setHeader('accesstoken', refreshResult.token);
-                        const user = yield admin_model_1.default.findOne({
+                        const admin = yield admin_model_1.default.findOne({
                             where: {
                                 credential_id: credential_id
                             },
                             raw: true
                         });
-                        res.locals.user = user;
+                        res.locals.admin = admin;
                         next();
                     }
                     else {
@@ -158,7 +164,7 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
     else {
         return res.json({
             code: 403,
-            message: 'Từ chối truy cập. Không có token'
+            message: 'Từ chối truy cập. Không có token----'
         });
     }
 });

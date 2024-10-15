@@ -27,6 +27,11 @@ const Category = database_1.default.define("Category", {
         type: sequelize_1.DataTypes.STRING(500),
         allowNull: true,
     },
+    status: {
+        type: sequelize_1.DataTypes.STRING,
+        defaultValue: "active",
+        allowNull: false,
+    },
     deleted: {
         type: sequelize_1.DataTypes.BOOLEAN,
         defaultValue: false,

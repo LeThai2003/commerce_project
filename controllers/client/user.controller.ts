@@ -1,6 +1,7 @@
 import {Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { TokenExpiredError } from 'jsonwebtoken';
 import User from "../../models/user.model";
 import Credential from "../../models/credential.model";
 import sendMail from "../../helpers/send-mail.helper";
@@ -246,31 +247,71 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
 //[POST] /user/logout
 export const logout = async (req: Request, res: Response) => {
-    try {
-        // access token
-        let accessToken = req.headers["authorization"].split(" ")[1];
-
-        const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
-        const { credential_id } = decoded;
-
-        await VerificationToken.destroy({
-            where:{
-                credential_id: credential_id,
-                token_type: {
-                    [Op.or] : ["access", "refresh"]
+    let accessToken = req.headers["authorization"];
+    if(accessToken)
+    {
+        try {
+            // access token
+            accessToken = accessToken.split(" ")[1];
+    
+            const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
+            const { credential_id } = decoded;
+    
+            await VerificationToken.destroy({
+                where:{
+                    credential_id: credential_id,
+                    token_type: {
+                        [Op.or] : ["access", "refresh"]
+                    }
                 }
+            })
+    
+            return res.json({
+                code: 200,
+                message: "Đăng xuất tài khoản thành công",
+            })
+    
+        } catch (error) {
+            if (error instanceof TokenExpiredError) {
+                // Nếu token hết hạn, lấy accessToken mới trong database mới tạo
+                const decoded = jwt.decode(accessToken);
+                const { credential_id } = decoded;
+
+                // const dataAccess = await VerificationToken.findOne({
+                //     where: {
+                //         credential_id: credential_id,
+                //         token_type: "access"
+                //     },
+                //     raw: true
+                // });
+
+                // const newAccessToken = dataAccess["verif_token"];
+
+                await VerificationToken.destroy({
+                    where:{
+                        credential_id: credential_id,
+                        token_type: {
+                            [Op.or] : ["access", "refresh"]
+                        }
+                    }
+                })
+        
+                return res.json({
+                    code: 200,
+                    message: "Đăng xuất tài khoản thành công",
+                })
             }
-        })
-
-        return res.json({
-            code: 200,
-            message: "Đăng xuất tài khoản thành công",
-        })
-
-    } catch (error) {
+            return res.json({
+                code: 400,
+                message: "Error - logout"
+            })
+        }
+    }
+    else
+    {
         return res.json({
             code: 400,
-            message: "Error - logout"
+            message: "không có accesstoken được truyền lên"
         })
     }
 }
