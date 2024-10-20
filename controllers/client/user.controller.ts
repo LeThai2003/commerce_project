@@ -48,7 +48,7 @@ export const login = async (req: Request, res: Response) => {
         }
 
         // Tạo access token
-        const accessToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
+        const accessToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '1m' });
 
         // Tạo refresh token
         const refreshToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
@@ -62,6 +62,7 @@ export const login = async (req: Request, res: Response) => {
             token_type: "access",
             verif_token: accessToken,
             expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
+            // expire_date: new Date(Date.now() + 1000)
         };
 
 
@@ -375,7 +376,7 @@ export const passwordOtp = async (req: Request, res: Response) => {
                 email: email,
                 otp: otp,
                 expiresAt: {
-                    [Op.gt]: new Date(Date.now()),
+                    [Op.gte]: new Date(Date.now()),
                 },
                 verify_otp: false
             },

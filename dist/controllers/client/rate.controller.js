@@ -84,21 +84,20 @@ const topRate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             },
             raw: true
         });
-        console.log(products);
         let newProducts = [];
         for (const item of dataTopRating) {
-            newProducts.push(Object.assign(Object.assign({}, item), products.find(item => item["product_id"] === item["product_id"])));
+            newProducts.push(Object.assign(Object.assign({}, item), products.find(infoProduct => infoProduct["product_id"] === item["product_id"])));
         }
         return res.json({
             code: 200,
-            message: "Lấy danh sách top rate thành công",
+            message: "Lấy danh sách comment thành công",
             data: newProducts
         });
     }
     catch (error) {
         return res.json({
             code: 500,
-            message: "Lỗi lấy danh sách top-rate " + error
+            message: "Lỗi lấy danh sách comment " + error
         });
     }
 });

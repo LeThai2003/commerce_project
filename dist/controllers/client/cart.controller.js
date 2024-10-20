@@ -19,13 +19,7 @@ const cart_item_model_1 = __importDefault(require("../../models/cart_item.model"
 const product_model_1 = __importDefault(require("../../models/product.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const credential_id = req["credential_id"];
-        const user = yield user_model_1.default.findOne({
-            where: {
-                credential_id: credential_id,
-            },
-            raw: true,
-        });
+        const user = res.locals.user;
         let cart = yield cart_model_1.default.findOne({
             where: {
                 user_id: user["user_id"]
@@ -34,8 +28,10 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         if (!cart) {
             return res.json({
-                code: 401,
-                message: "Giỏ hàng không tồn tại"
+                code: 200,
+                message: "Giỏ hàng không tồn tại",
+                data: [],
+                totalPrice: 0,
             });
         }
         ;
@@ -47,8 +43,10 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         if (cartItems.length === 0) {
             return res.json({
-                code: 400,
-                message: "Giỏ hàng tróng!"
+                code: 200,
+                message: "Giỏ hàng tróng!",
+                data: [],
+                totalPrice: 0,
             });
         }
         let totalPrice = 0;
@@ -76,7 +74,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (error) {
         return res.json({
             code: 400,
-            message: "Lỗi lấy sản phẩm giỏ hàng"
+            message: "Lỗi lấy sản phẩm giỏ hàng" + error
         });
     }
 });

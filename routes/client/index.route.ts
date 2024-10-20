@@ -10,6 +10,8 @@ import { rateRoute } from "./rate.route";
 import { uploadRoute } from "./upload.route";
 import verifyToken from "../../middlewares/client/verifyToken.middleware";
 import { addressRoute } from "./address.route";
+import { commentRoute } from "./comment.route";
+import { blogRoute } from "./blog.route";
 
 
 
@@ -30,6 +32,10 @@ const clientRoutes = (app: Express): void => {
     app.use("/account", verifyToken, accountRoutes);
 
     app.use("/rate", rateRoute);
+
+    app.use("/comment", commentRoute);
+
+    app.use("/blogs", blogRoute);
 
     app.use(`/upload`, uploadRoute);
 

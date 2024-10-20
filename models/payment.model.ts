@@ -20,6 +20,10 @@ const Payment = sequelize.define("Payment", {
     is_payed: {
         type: DataTypes.INTEGER,
     },
+    method_payment:{
+      type: DataTypes.STRING(20),
+      defaultValue: "cash"
+    },
     payment_status: {
         type: DataTypes.STRING(50),
     },

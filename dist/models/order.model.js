@@ -34,14 +34,15 @@ const Order = database_1.default.define("Order", {
         type: sequelize_1.DataTypes.BOOLEAN,
         defaultValue: false,
     },
-    fullName: {
-        type: sequelize_1.DataTypes.STRING(100)
+    address: {
+        type: sequelize_1.DataTypes.INTEGER,
+        references: {
+            model: "address",
+            key: "address_id"
+        }
     },
     phone: {
         type: sequelize_1.DataTypes.STRING(15)
-    },
-    address: {
-        type: sequelize_1.DataTypes.STRING(100)
     },
 }, {
     tableName: 'orders',

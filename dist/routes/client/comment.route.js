@@ -26,15 +26,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.productRoute = void 0;
+exports.commentRoute = void 0;
 const express_1 = __importDefault(require("express"));
-const controller = __importStar(require("../../controllers/client/product.controller"));
+const multer_1 = __importDefault(require("multer"));
+const upload = (0, multer_1.default)();
+const uploadToCloud_1 = require("../../middlewares/admin/uploadToCloud");
+const controller = __importStar(require("../../controllers/client/comment.controller"));
 const verifyToken_middleware_1 = __importDefault(require("../../middlewares/client/verifyToken.middleware"));
 const router = express_1.default.Router();
-router.get("/", controller.index);
-router.get("/:productId", controller.detail);
-router.patch("/like/:type/:productId", verifyToken_middleware_1.default, controller.like);
-router.get("/list/favorite", verifyToken_middleware_1.default, controller.wishlist);
-router.delete("/delete/favorite/:productId", verifyToken_middleware_1.default, controller.deleteFavoriteProduct);
-router.post("/wishlist/add-to-cart", verifyToken_middleware_1.default, controller.addToCartFromWishlist);
-exports.productRoute = router;
+router.post("/:productId", verifyToken_middleware_1.default, upload.fields([
+    { name: 'image_url', maxCount: 5 }
+]), uploadToCloud_1.uploadFields, controller.postComment);
+router.get("/:productId", controller.listComment);
+exports.commentRoute = router;

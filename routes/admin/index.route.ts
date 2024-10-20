@@ -6,12 +6,15 @@ import { rolesRoute } from "./roles.route";
 import { accountRoute } from "./account.route";
 import verifyToken from "../../middlewares/admin/verifyToken.middleware"
 import systemConfig from "../../configs/systemConfig";
+import { blogRoute } from "./blog.route";
 
 const adminRoutes = (app : Express) : void => {
 
     const path = systemConfig["base_path"];
 
     app.use(`${path}/accounts`, accountRoute);
+
+    app.use(`${path}/blogs`, blogRoute);
 
     app.use(verifyToken);
 

@@ -18,19 +18,15 @@ const cart_item_model_1 = __importDefault(require("../../models/cart_item.model"
 const product_model_1 = __importDefault(require("../../models/product.model"));
 const order_item_model_1 = __importDefault(require("../../models/order-item.model"));
 const order_model_1 = __importDefault(require("../../models/order.model"));
-const sequelize_1 = require("sequelize");
 const payment_model_1 = __importDefault(require("../../models/payment.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let { fullName, phone, address, note } = req.body["infoCustomer"];
-        const ids = req.body["data_ids"];
-        const cart_id = req.body["cart_id"];
-        console.log(cart_id);
-        console.log(ids);
-        console.log(req.body);
+        let { note, address, phone } = req.body["infoCustomer"];
+        const method_payment = req.body["method_payment"];
+        const user = res.locals.user;
         const cart = yield cart_model_1.default.findOne({
             where: {
-                cart_id: cart_id
+                user_id: user["user_id"]
             },
             raw: true,
         });
@@ -42,28 +38,24 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         const cartItems = yield cart_item_model_1.default.findAll({
             where: {
-                cart_item_id: {
-                    [sequelize_1.Op.in]: ids,
-                }
+                cart_id: cart["cart_id"]
             },
             raw: true,
         });
-        console.log(cartItems);
         if (cartItems.length === 0) {
             return res.json({
-                code: 400,
+                code: 200,
                 message: "Giỏ hàng trống!"
             });
         }
         let totalPrice = 0;
         const orders = yield order_model_1.default.create({
-            cart_id: cart_id,
+            cart_id: cart["cart_id"],
             order_date: new Date(),
             order_desc: note,
             order_fee: totalPrice,
-            fullName: fullName,
-            phone: phone,
-            address: address
+            address: address,
+            phone: phone
         });
         for (const item of cartItems) {
             const infoProduct = yield product_model_1.default.findOne({
@@ -98,16 +90,18 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         yield cart_item_model_1.default.destroy({
             where: {
-                cart_item_id: {
-                    [sequelize_1.Op.in]: ids,
-                }
+                cart_id: cart["cart_id"]
             }
         });
-        yield payment_model_1.default.create({
-            order_id: orders.dataValues["order_id"],
-            is_payed: 0,
-            payment_status: "Đang xử lý",
-        });
+        if (method_payment == 1) {
+            yield payment_model_1.default.create({
+                order_id: orders.dataValues["order_id"],
+                is_payed: 0,
+                payment_status: "Đang xử lý",
+            });
+        }
+        else {
+        }
         return res.json({
             code: 200,
             message: "Đặt hàng thành công!",

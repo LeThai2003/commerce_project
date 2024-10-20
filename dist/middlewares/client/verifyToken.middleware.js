@@ -18,6 +18,7 @@ const credential_model_1 = __importDefault(require("../../models/credential.mode
 const verification_token_model_1 = __importDefault(require("../../models/verification-token.model"));
 const sequelize_1 = require("sequelize");
 const user_model_1 = __importDefault(require("../../models/user.model"));
+const console_1 = require("console");
 const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, function* () {
     if (!token) {
         return {
@@ -32,7 +33,7 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
                 verif_token: token,
                 token_type: "refresh",
                 expire_date: {
-                    [sequelize_1.Op.gt]: new Date(Date.now())
+                    [sequelize_1.Op.gte]: new Date(Date.now())
                 }
             },
             raw: true
@@ -71,16 +72,14 @@ const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, functio
 });
 const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     let accessToken = req.headers["authorization"];
-    console.log(accessToken);
-    console.log("--------------------------");
+    console.log("Logout: ==============1==========" + accessToken);
     if (accessToken) {
         try {
             accessToken = accessToken.split(" ")[1];
             const decoded = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
-            console.log("--------------------------");
-            console.log(accessToken);
-            console.log(credential_id);
+            console.log("Logout: =============2===========" + accessToken);
+            console.log("Logout: =============3===========" + credential_id);
             const credential = yield credential_model_1.default.findOne({
                 where: {
                     credential_id: credential_id,
@@ -98,16 +97,13 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 where: {
                     token_type: "access",
                     verif_token: accessToken,
-                    expire_date: {
-                        [sequelize_1.Op.gt]: new Date(Date.now())
-                    }
                 },
                 raw: true,
             });
             if (!isValidToken) {
                 return res.json({
                     code: 401,
-                    message: 'Token không hợp lệ. Truy cập bị từ chối'
+                    message: 'Token không hợp lệ. Truy cập bị từ chối-TẠi sao--'
                 });
             }
             req["credential_id"] = credential_id;
@@ -123,8 +119,10 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
         }
         catch (error) {
             if (error instanceof jsonwebtoken_2.TokenExpiredError) {
+                console.log("Logout: ========================hết hạn===============");
                 const decoded = jsonwebtoken_1.default.decode(accessToken);
                 const { credential_id } = decoded;
+                console.log("Logout: =============2===========" + credential_id);
                 const record = yield verification_token_model_1.default.findOne({
                     where: {
                         credential_id: credential_id,
@@ -163,7 +161,7 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
             else {
                 return res.json({
                     code: 401,
-                    message: 'Token không hợp lệ. Từ chối truy cập ---'
+                    message: 'Token không hợp lệ. Từ chối truy cập --1-'
                 });
             }
         }
@@ -171,7 +169,7 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
     else {
         return res.json({
             code: 403,
-            message: 'Từ chối truy cập. Không có token----'
+            message: 'Từ chối truy cập. Không có token----' + console_1.error
         });
     }
 });

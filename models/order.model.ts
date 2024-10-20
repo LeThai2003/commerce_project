@@ -31,14 +31,15 @@ const Order = sequelize.define("Order", {
         type: DataTypes.BOOLEAN,
         defaultValue: false, // Đặt giá trị mặc định là false
     },
-    fullName: {
-      type: DataTypes.STRING(100)
+    address: {
+      type: DataTypes.INTEGER,
+      references:{
+        model: "address",
+        key: "address_id" 
+      }
     },
     phone: {
       type: DataTypes.STRING(15)
-    },
-    address: {
-      type: DataTypes.STRING(100)
     },
  },{
     tableName: 'orders',

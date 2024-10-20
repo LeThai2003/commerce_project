@@ -10,14 +10,7 @@ import { where } from "sequelize";
 export const index = async (req: Request, res: Response) => {
     try {
         // tìm giỏ hàng
-        const credential_id = req["credential_id"];
-
-        const user = await User.findOne({
-            where:{
-                credential_id: credential_id,
-            },
-            raw: true,
-        });
+        const user = res.locals.user;
 
         let cart = await Cart.findOne({
             where: {
@@ -29,8 +22,10 @@ export const index = async (req: Request, res: Response) => {
         if(!cart)
         {
             return res.json({
-                code: 401,
-                message: "Giỏ hàng không tồn tại"
+                code: 200,
+                message: "Giỏ hàng không tồn tại",
+                data: [],
+                totalPrice: 0,
             })
         };
 
@@ -44,8 +39,10 @@ export const index = async (req: Request, res: Response) => {
         if(cartItems.length === 0)
         {
             return res.json({
-                code: 400,
-                message: "Giỏ hàng tróng!"
+                code: 200,
+                message: "Giỏ hàng tróng!",
+                data: [],
+                totalPrice: 0,
             })
         }
 
@@ -79,7 +76,7 @@ export const index = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({
             code: 400,
-            message: "Lỗi lấy sản phẩm giỏ hàng"
+            message: "Lỗi lấy sản phẩm giỏ hàng" + error
         })
     }
 }

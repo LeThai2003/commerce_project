@@ -12,17 +12,14 @@ import Payment from "../../models/payment.model";
 //[POST] /orders
 export const index = async (req: Request, res: Response) => {
     try {
-        let {fullName, phone, address, note} = req.body["infoCustomer"];
-        const ids = req.body["data_ids"];
-        const cart_id = req.body["cart_id"];
+        let {note, address, phone} = req.body["infoCustomer"];
+        const method_payment = req.body["method_payment"];
 
-        console.log(cart_id);
-        console.log(ids);
-        console.log(req.body);
+        const user = res.locals.user;
 
         const cart = await Cart.findOne({
             where: {
-                cart_id: cart_id
+                user_id: user["user_id"]
             },
             raw: true,
         });
@@ -37,19 +34,15 @@ export const index = async (req: Request, res: Response) => {
 
         const cartItems = await CartItem.findAll({
             where: {
-                cart_item_id: {
-                    [Op.in] : ids,
-                }
+                cart_id: cart["cart_id"]
             },
             raw: true,
         });
 
-        console.log(cartItems);
-
         if(cartItems.length === 0)
         {
             return res.json({
-                code: 400,
+                code: 200,
                 message: "Giỏ hàng trống!"
             })
         }
@@ -58,13 +51,12 @@ export const index = async (req: Request, res: Response) => {
 
         // Lưu orders
         const orders = await Order.create({
-            cart_id: cart_id,
+            cart_id: cart["cart_id"],
             order_date: new Date(),
             order_desc: note,
             order_fee: totalPrice,
-            fullName: fullName,
-            phone: phone,
-            address: address
+            address: address,
+            phone: phone
         });
 
         for (const item of cartItems) {
@@ -106,20 +98,23 @@ export const index = async (req: Request, res: Response) => {
         // xóa mục cartItem
         await CartItem.destroy({
             where:{
-                cart_item_id: {
-                    [Op.in] : ids,
-                }
+                cart_id: cart["cart_id"]
             }
         })
 
-
-        // payment
-        await Payment.create({
-            order_id: orders.dataValues["order_id"],
-            is_payed: 0, // giả sử mặc định là chưa trả
-            payment_status: "Đang xử lý", // pending
-        });
-
+        if(method_payment == 1)
+        {
+            // payment
+            await Payment.create({
+                order_id: orders.dataValues["order_id"],
+                is_payed: 0, // giả sử mặc định là chưa trả
+                payment_status: "Đang xử lý", // pending
+            });
+        }
+        else
+        {
+            // method_pament = momo
+        }
 
         return res.json({
             code: 200,

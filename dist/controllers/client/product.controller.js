@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.wishlist = exports.detail = exports.like = exports.index = void 0;
+exports.addToCartFromWishlist = exports.deleteFavoriteProduct = exports.wishlist = exports.detail = exports.like = exports.index = void 0;
 const product_model_1 = __importDefault(require("../../models/product.model"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const sequelize_1 = require("sequelize");
@@ -21,9 +21,11 @@ const pagination_helper_1 = require("../../helpers/pagination.helper");
 const user_model_1 = __importDefault(require("../../models/user.model"));
 const wishlist_model_1 = __importDefault(require("../../models/wishlist.model"));
 const database_1 = __importDefault(require("../../configs/database"));
+const comment_model_1 = __importDefault(require("../../models/comment.model"));
+const cart_model_1 = __importDefault(require("../../models/cart.model"));
+const cart_item_model_1 = __importDefault(require("../../models/cart_item.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log(req.query);
         let find = {
             status: "active",
             deleted: false,
@@ -92,7 +94,6 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             order: sort,
             raw: true,
         });
-        console.log("----------------------------------------");
         for (const item of products) {
             const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
             item["newPrice"] = newPrice;
@@ -116,7 +117,6 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 raw: true,
                 type: sequelize_1.QueryTypes.SELECT
             });
-            console.log(parseFloat(ratingAVG[0]["rating"]));
             item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
         }
         let rate = req.query["rate"];
@@ -216,10 +216,34 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { productId } = req.params;
         console.log("----------------------------------------");
-        const accessToken = req.headers["authorization"].split(" ")[1];
-        console.log(accessToken);
+        let accessToken = req.headers["authorization"];
+        console.log("token product detail: " + accessToken);
         let like = false;
-        if (accessToken) {
+        let isCommented = false;
+        const listComment = yield comment_model_1.default.findAll({
+            where: {
+                product_id: parseInt(productId),
+                deleted: false
+            },
+            order: [
+                ['createdAt', 'DESC']
+            ],
+            limit: 4,
+            raw: true
+        });
+        for (const comment of listComment) {
+            const infoUser = yield user_model_1.default.findOne({
+                where: {
+                    user_id: comment["user_id"],
+                },
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'deleted'],
+                }
+            });
+            comment["infoUser"] = infoUser;
+        }
+        if (accessToken && accessToken.trim() !== "Bearer") {
+            accessToken = accessToken.split(" ")[1];
             const decoded = jsonwebtoken_1.default.decode(accessToken);
             const { credential_id } = decoded;
             const user = yield database_1.default.query(`
@@ -230,7 +254,6 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 raw: true,
                 type: sequelize_1.QueryTypes.SELECT
             });
-            console.log(user[0]["user_id"]);
             const record = yield database_1.default.query(`
                 select * 
                 FROM wishlist JOIN users on wishlist.user_id = users.user_id and wishlist.user_id = ${user[0]["user_id"]}
@@ -242,15 +265,14 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             if (record) {
                 like = true;
             }
-            console.log(`
-                select users.user_id
-                FROM users JOIN credentials on users.credential_id = credentials.credential_id
-                JOIN verification_tokens on verification_tokens.credential_id = credentials.credential_id
-                WHERE verification_tokens.verif_token = '${accessToken}'
-            `);
+            if (user) {
+                const existUserComment = listComment.find(item => item["user_id"] === user[0]["user_id"]);
+                if (existUserComment) {
+                    isCommented = true;
+                }
+            }
         }
         ;
-        const user = 11;
         const product = yield product_model_1.default.findOne({
             attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
             where: {
@@ -258,7 +280,7 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             },
             raw: true
         });
-        product["newPrice"] = Math.floor((product["price_unit"] * (1 - (product["discount"] || 0) * 100)));
+        product["newPrice"] = Math.floor((product["price_unit"] * (1 - (product["discount"] || 0) / 100)));
         const countQuantitySold = yield database_1.default.query(`
             SELECT SUM(oi.ordered_quantity) AS total_quantity
             FROM order_items oi
@@ -277,13 +299,15 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             raw: true,
             type: sequelize_1.QueryTypes.SELECT
         });
+        product["comment"] = listComment;
         return res.json({
             code: 200,
             message: "Load dữ liệu chi tiết sản phẩm thành công",
             data: product,
             quantityProductSold: parseInt(countQuantitySold[0]["total_quantity"]) || 0,
             rating: parseFloat(ratingAVG[0]["rating"]) || 0,
-            like: like
+            like: like,
+            commented: isCommented
         });
     }
     catch (error) {
@@ -333,3 +357,79 @@ const wishlist = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.wishlist = wishlist;
+const deleteFavoriteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let user = res.locals.user;
+        const productId = req.params.productId;
+        yield wishlist_model_1.default.destroy({
+            where: {
+                product_id: parseInt(productId),
+                user_id: user["user_id"]
+            }
+        });
+        return res.json({
+            code: 200,
+            message: "Xóa sản phẩm yêu thích thành công!",
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Thất bại " + error
+        });
+    }
+});
+exports.deleteFavoriteProduct = deleteFavoriteProduct;
+const addToCartFromWishlist = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let user = res.locals.user;
+        console.log(req.body);
+        const ids = req.body;
+        const cart = yield cart_model_1.default.findOne({
+            where: {
+                user_id: user["user_id"],
+            },
+            raw: true
+        });
+        for (const id of ids) {
+            const exitsItem = yield cart_item_model_1.default.findOne({
+                where: {
+                    cart_id: cart["cart_id"],
+                    product_id: id
+                }
+            });
+            if (exitsItem) {
+                yield cart_item_model_1.default.update({
+                    ordered_quantity: exitsItem["ordered_quantity"] + 1
+                }, {
+                    where: {
+                        cart_item_id: exitsItem["cart_item_id"]
+                    }
+                });
+            }
+            else {
+                yield cart_item_model_1.default.create({
+                    cart_id: cart["cart_id"],
+                    product_id: id,
+                    ordered_quantity: 1
+                });
+            }
+            yield wishlist_model_1.default.destroy({
+                where: {
+                    product_id: id
+                }
+            });
+        }
+        return res.json({
+            code: 200,
+            message: "Thêm sản phẩm yêu thích vào giỏ hàng thành công!",
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Thất bại " + error
+        });
+    }
+});
+exports.addToCartFromWishlist = addToCartFromWishlist;

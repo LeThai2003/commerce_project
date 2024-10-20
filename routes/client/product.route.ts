@@ -13,5 +13,9 @@ router.patch("/like/:type/:productId",verifyToken, controller.like);
 
 router.get("/list/favorite", verifyToken, controller.wishlist);
 
+router.delete("/delete/favorite/:productId", verifyToken, controller.deleteFavoriteProduct);
+
+router.post("/wishlist/add-to-cart", verifyToken, controller.addToCartFromWishlist);
+
 
 export const productRoute : Router = router;

@@ -46,7 +46,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 message: 'Mật khẩu không đúng'
             });
         }
-        const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
+        const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '1m' });
         const refreshToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
         const token = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
         const verifycation_data = {
@@ -285,7 +285,7 @@ const passwordOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 email: email,
                 otp: otp,
                 expiresAt: {
-                    [sequelize_1.Op.gt]: new Date(Date.now()),
+                    [sequelize_1.Op.gte]: new Date(Date.now()),
                 },
                 verify_otp: false
             },

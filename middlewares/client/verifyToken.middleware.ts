@@ -5,6 +5,7 @@ import Credential from "../../models/credential.model";
 import VerificationToken from "../../models/verification-token.model";
 import { Op } from "sequelize";
 import User from "../../models/user.model";
+import { error } from "console";
 
 
 const refreshTokenHandler = async (token: string) => {
@@ -24,7 +25,7 @@ const refreshTokenHandler = async (token: string) => {
                 verif_token: token,
                 token_type: "refresh",
                 expire_date: {
-                    [Op.gt]: new Date(Date.now())
+                    [Op.gte]: new Date(Date.now())
                 }
             },
             raw: true
@@ -54,6 +55,7 @@ const refreshTokenHandler = async (token: string) => {
             token_type: "access",
             verif_token: newAccessToken,
             expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000) // 12 hours
+            // expire_date: new Date(Date.now() + 1000) // 12 hours
         };
 
         await VerificationToken.create(verificationData);
@@ -73,17 +75,15 @@ const refreshTokenHandler = async (token: string) => {
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     let accessToken = req.headers["authorization"];
-    console.log(accessToken);
-    console.log("--------------------------");
+    console.log( "Logout: ==============1==========" + accessToken);
     if (accessToken) {
         try {
             accessToken = accessToken.split(" ")[1]
             const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
 
-            console.log("--------------------------");
-            console.log(accessToken);
-            console.log(credential_id);
+            console.log("Logout: =============2===========" + accessToken);
+            console.log("Logout: =============3===========" + credential_id);
 
             const credential = await Credential.findOne({
                 where: {
@@ -105,9 +105,6 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
                 where: {
                     token_type: "access",
                     verif_token: accessToken,
-                    expire_date: {
-                        [Op.gt]: new Date(Date.now())
-                    }
                 },
                 raw: true,
             });
@@ -115,7 +112,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             if (!isValidToken) {
                 return res.json({
                     code: 401,
-                    message: 'Token không hợp lệ. Truy cập bị từ chối'
+                    message: 'Token không hợp lệ. Truy cập bị từ chối-TẠi sao--'
                 });
             }
 
@@ -137,9 +134,13 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             if (error instanceof TokenExpiredError) {
                 // Nếu token hết hạn, gọi hàm refreshToken
 
+                console.log("Logout: ========================hết hạn===============")
+
                 const decoded = jwt.decode(accessToken);
                 
                 const { credential_id } = decoded;
+
+                console.log("Logout: =============2===========" + credential_id);
 
                 const record = await VerificationToken.findOne({
                     where: {
@@ -188,14 +189,14 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             } else {
                 return res.json({
                     code: 401,
-                    message: 'Token không hợp lệ. Từ chối truy cập ---'
+                    message: 'Token không hợp lệ. Từ chối truy cập --1-'
                 });
             }
         }
     } else {
         return res.json({
             code: 403,
-            message: 'Từ chối truy cập. Không có token----'
+            message: 'Từ chối truy cập. Không có token----' + error
         });
     }
 };

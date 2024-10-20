@@ -8,13 +8,16 @@ import { paginationHelper } from "../../helpers/pagination.helper";
 import User from "../../models/user.model";
 import Wishlist from "../../models/wishlist.model";
 import sequelize from "../../configs/database";
+import Comment from "../../models/comment.model";
+import Cart from "../../models/cart.model";
+import CartItem from "../../models/cart_item.model";
 
 
 
 //[GET] /product/index.js
 export const index = async (req: Request, res: Response) => {
     try {
-        console.log(req.query);
+        // console.log(req.query);
 
         let find = {
             status: "active",
@@ -98,7 +101,7 @@ export const index = async (req: Request, res: Response) => {
             raw: true,
         });
 
-        console.log("----------------------------------------")
+        // console.log("----------------------------------------")
 
         // ---- giá mới + đếm số lượng sản phẩm đã bán + rating ---
         for (const item of products) {
@@ -128,7 +131,7 @@ export const index = async (req: Request, res: Response) => {
                 type: QueryTypes.SELECT
             });
 
-            console.log(parseFloat(ratingAVG[0]["rating"]))
+            // console.log(parseFloat(ratingAVG[0]["rating"]))
 
             item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0
         }
@@ -263,14 +266,42 @@ export const detail = async (req: Request, res: Response) => {
 
         console.log("----------------------------------------")
         
-        const accessToken = req.headers["authorization"].split(" ")[1];
+        let accessToken = req.headers["authorization"];
 
-        console.log(accessToken)
+        console.log("token product detail: " + accessToken)
         
         let like = false;
 
-        if(accessToken)
+        let isCommented = false;
+
+        const listComment = await Comment.findAll({
+            where: {
+                product_id: parseInt(productId),
+                deleted: false
+            },
+            order: [
+                ['createdAt', 'DESC']
+            ],
+            limit: 4,
+            raw: true
+        });
+
+        for (const comment of listComment) {
+            const infoUser = await User.findOne({
+                where: {
+                    user_id: comment["user_id"],
+                },
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'deleted'], 
+                }
+            });
+
+            comment["infoUser"] = infoUser
+        }
+
+        if(accessToken && accessToken.trim() !== "Bearer")
         {
+            accessToken = accessToken.split(" ")[1];
             const decoded = jwt.decode(accessToken);
             const { credential_id } = decoded;
 
@@ -282,8 +313,6 @@ export const detail = async (req: Request, res: Response) => {
                 raw: true,
                 type: QueryTypes.SELECT
             })
-
-            console.log(user[0]["user_id"])
 
             const record = await sequelize.query(`
                 select * 
@@ -299,15 +328,18 @@ export const detail = async (req: Request, res: Response) => {
                 like = true
             }
 
-            console.log(`
-                select users.user_id
-                FROM users JOIN credentials on users.credential_id = credentials.credential_id
-                JOIN verification_tokens on verification_tokens.credential_id = credentials.credential_id
-                WHERE verification_tokens.verif_token = '${accessToken}'
-            `)
-        };
+        
+            // ----- comment----
+            if(user)
+            {
+                const existUserComment = listComment.find(item => item["user_id"] === user[0]["user_id"]);
+                if(existUserComment)
+                {
+                    isCommented = true;
+                }
+            }
 
-        const user = 11;
+        };
         
         const product = await Product.findOne({
             attributes: { exclude: ['createdAt', 'updatedAt', 'deleted', 'status'] },
@@ -315,9 +347,9 @@ export const detail = async (req: Request, res: Response) => {
                 product_id: productId,
             },
             raw: true
-        })
+        });
 
-        product["newPrice"] = Math.floor((product["price_unit"] * (1 - (product["discount"] || 0) * 100)));
+        product["newPrice"] = Math.floor((product["price_unit"] * (1 - (product["discount"] || 0)/100)));
 
         const countQuantitySold = await sequelize.query(`
             SELECT SUM(oi.ordered_quantity) AS total_quantity
@@ -341,13 +373,16 @@ export const detail = async (req: Request, res: Response) => {
             type: QueryTypes.SELECT
         });
 
+        product["comment"] = listComment;
+
         return res.json({
             code: 200,
             message: "Load dữ liệu chi tiết sản phẩm thành công",
             data: product,
             quantityProductSold: parseInt(countQuantitySold[0]["total_quantity"]) || 0,
             rating: parseFloat(ratingAVG[0]["rating"]) || 0,
-            like: like
+            like: like,
+            commented: isCommented
         })
     } catch (error) {
         return res.json({
@@ -397,6 +432,91 @@ export const wishlist = async (req: Request, res: Response) => {
             data: paginatedProductsWishlist,
             totalPage: objectPagination["totalPage"],
             pageNow: objectPagination["page"],
+        })
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Thất bại " + error
+        })
+    }
+}
+//[DELETE] /products/delete/favorite/:productId
+export const deleteFavoriteProduct = async (req: Request, res: Response) => {
+    try {
+        let user = res.locals.user;
+        const productId = req.params.productId;
+
+        await Wishlist.destroy({
+            where: {
+                product_id: parseInt(productId),
+                user_id: user["user_id"]
+            }
+        })
+        
+        return res.json({
+            code: 200,
+            message: "Xóa sản phẩm yêu thích thành công!",
+        })
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Thất bại " + error
+        })
+    }
+}
+
+//[DELETE] /products/wishlist/add-to-cart
+export const addToCartFromWishlist = async (req: Request, res: Response) => {
+    try {
+        let user = res.locals.user;
+        
+        console.log(req.body);
+
+        const ids = req.body;
+
+        const cart = await Cart.findOne({
+            where: {
+                user_id: user["user_id"],
+            },
+            raw: true
+        });
+
+        for (const id of ids) {
+            const exitsItem = await CartItem.findOne({
+                where: {
+                    cart_id: cart["cart_id"],
+                    product_id: id
+                }
+            });
+            if(exitsItem)
+            {
+                await CartItem.update({
+                    ordered_quantity: exitsItem["ordered_quantity"] + 1
+                }, {
+                    where: {
+                        cart_item_id: exitsItem["cart_item_id"]
+                    }
+                })
+            }
+            else
+            {
+                await CartItem.create({
+                    cart_id: cart["cart_id"],
+                    product_id: id,
+                    ordered_quantity: 1
+                });
+            }
+            
+            await Wishlist.destroy({
+                where: {
+                    product_id: id
+                }
+            })
+        }
+        
+        return res.json({
+            code: 200,
+            message: "Thêm sản phẩm yêu thích vào giỏ hàng thành công!",
         })
     } catch (error) {
         return res.json({

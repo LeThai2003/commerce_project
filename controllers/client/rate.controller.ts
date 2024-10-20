@@ -90,27 +90,26 @@ export const topRate = async (req: Request, res: Response) => {
             },
             raw: true
         });
-
-        console.log(products)
+        
 
         let newProducts = [];
 
         for (const item of dataTopRating) {
             newProducts.push({
                 ...item,
-                ...products.find(item => item["product_id"] === item["product_id"])
+                ...products.find(infoProduct => infoProduct["product_id"] === item["product_id"])
             })
         }
 
         return res.json({
             code: 200,
-            message: "Lấy danh sách top rate thành công",
+            message: "Lấy danh sách comment thành công",
             data: newProducts
         })
     } catch (error) {
         return res.json({
             code: 500,
-            message: "Lỗi lấy danh sách top-rate " + error
+            message: "Lỗi lấy danh sách comment " + error
         })
     }
 }
