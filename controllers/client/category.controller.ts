@@ -44,8 +44,13 @@ export const getProductCategory = async(req: Request, res: Response) => {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 5; 
         const offset = (page - 1) * limit;   
-        const sortKey = (req.query.sortKey as string).toUpperCase() || 'product_title';      
-        const sortValue = (req.query.sortValue as string).toUpperCase() || 'ASC'; 
+        let sortKey = 'product_title';      
+        let sortValue ='ASC'; 
+        if(req.query.sortKey && req.query.sortValue )
+        {
+            sortKey = (req.query.sortKey as string).toUpperCase();      
+            sortValue = (req.query.sortValue as string).toUpperCase(); 
+        }
         let searchKey = (req.query.searchKey as string) || "";
         searchKey = convertToSlug(searchKey.toLowerCase());
 

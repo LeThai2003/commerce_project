@@ -12,26 +12,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createPost = exports.productsOfCategory = exports.index = void 0;
-const category_model_1 = __importDefault(require("../../models/category.model"));
+exports.deleteBlog = exports.editPatch = exports.createPost = exports.detail = exports.index = void 0;
 const pagination_helper_1 = require("../../helpers/pagination.helper");
-const database_1 = __importDefault(require("../../configs/database"));
-const sequelize_1 = require("sequelize");
 const blog_model_1 = __importDefault(require("../../models/blog.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const listCategories = yield category_model_1.default.findAll({
+        const blogsList = yield blog_model_1.default.findAll({
             where: {
                 deleted: false
             },
+            attributes: { exclude: ['deleted', 'updatedAt'] },
             raw: true
         });
-        const objectPagination = (0, pagination_helper_1.paginationHelper)(req, listCategories.length);
-        const paginatedCategories = listCategories.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
+        console.log(blogsList);
+        const objectPagination = (0, pagination_helper_1.paginationHelper)(req, blogsList.length);
+        const paginatedBlogs = blogsList.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
         return res.json({
             code: 200,
-            message: "load dữ liệu thành công",
-            data: paginatedCategories,
+            message: "Lấy danh sách blogs thành công",
+            data: paginatedBlogs,
             totalPage: objectPagination["totalPage"],
             pageNow: objectPagination["page"]
         });
@@ -39,48 +38,37 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (error) {
         return res.json({
             code: 400,
-            message: "Lỗi load category " + error
+            message: "Lỗi lấy danh sách blogs " + error
         });
     }
 });
 exports.index = index;
-const productsOfCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const category_id = req.params.category_id;
-        let ids = yield database_1.default.query(`
-            WITH RECURSIVE category_hierarchy AS (
-                SELECT category_id, parent_category_id, category_title
-                FROM categories
-                WHERE category_id = ${parseInt(category_id)} 
-
-                UNION ALL
-
-                SELECT c.category_id, c.parent_category_id, c.category_title
-                FROM categories c
-                INNER JOIN category_hierarchy ch ON c.parent_category_id = ch.category_id
-            )
-            SELECT p.product_id
-            FROM products p
-            WHERE p.category_id IN (SELECT category_id FROM category_hierarchy);
-        `, {
-            raw: true,
-            type: sequelize_1.QueryTypes.SELECT
+        const blogId = req.params["blog_id"];
+        const blog = yield blog_model_1.default.findOne({
+            where: {
+                deleted: false,
+                blog_id: blogId
+            },
+            attributes: { exclude: ['deleted', 'updatedAt'] },
+            raw: true
         });
-        ids = ids.map(item => { return item["product_id"]; });
+        console.log(blog);
         return res.json({
             code: 200,
-            message: "load dữ liệu thành công",
-            data: ids,
+            message: "Lấy danh sách blogs thành công",
+            data: blog
         });
     }
     catch (error) {
         return res.json({
             code: 400,
-            message: "Lỗi load category " + error
+            message: "Lỗi lấy danh sách blogs " + error
         });
     }
 });
-exports.productsOfCategory = productsOfCategory;
+exports.detail = detail;
 const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log(req.body);
@@ -102,3 +90,51 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.createPost = createPost;
+const editPatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const blogId = req.params["blog_id"];
+        console.log(req.body);
+        if (req.body["image_url"]) {
+            req.body["image_url"] = JSON.stringify(req.body["image_url"]);
+        }
+        yield blog_model_1.default.update(Object.assign({}, req.body), {
+            where: {
+                blog_id: blogId
+            }
+        });
+        return res.json({
+            code: 200,
+            message: "Edit a blog successfully"
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Lỗi edit blog"
+        });
+    }
+});
+exports.editPatch = editPatch;
+const deleteBlog = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const blogId = req.params["blog_id"];
+        yield blog_model_1.default.update({
+            deleted: 1
+        }, {
+            where: {
+                blog_id: blogId
+            }
+        });
+        return res.json({
+            code: 200,
+            message: "Delete a blog successfully"
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Lỗi delete blog"
+        });
+    }
+});
+exports.deleteBlog = deleteBlog;

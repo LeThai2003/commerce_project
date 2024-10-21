@@ -10,6 +10,7 @@ import { DATE, Op, or, QueryTypes } from "sequelize";
 import sequelize from "../../configs/database";
 import { generateRandomNumber } from "../../helpers/generate.helper";
 import ForgotPassword from "../../models/forgotPassword.model";
+import Role from "../../models/roles.model";
 
 
 //[POST] /user/login
@@ -47,14 +48,18 @@ export const login = async (req: Request, res: Response) => {
                 });
         }
 
+        const role = await Role.findOne({
+            where: {
+                role_id: credential['role_id']
+            },
+            raw: true
+        })
+
         // Tạo access token
-        const accessToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '1m' });
+        const accessToken = jwt.sign({ credential_id: credential["credential_id"], role: role['title']}, process.env.SECRET_KEY, { expiresIn: '12h' });
 
         // Tạo refresh token
-        const refreshToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
-
-
-        const token = jwt.sign({ credential_id: credential["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '12h' });
+        const refreshToken = jwt.sign({ credential_id: credential["credential_id"],role: role['title']}, process.env.SECRET_KEY, { expiresIn: '7d' });
 
         // lưu token lại
         const verifycation_data = {
@@ -96,7 +101,7 @@ export const login = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({ 
             code: "400",
-            message: 'Error ( login ): ', 
+            message: 'Error ( login ): ' + error, 
         });
     }
 }
@@ -255,7 +260,7 @@ export const logout = async (req: Request, res: Response) => {
             // access token
             accessToken = accessToken.split(" ")[1];
     
-            const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
+            const decoded = jwt.decode(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
     
             await VerificationToken.destroy({
@@ -339,7 +344,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
             });
         }
 
-        const otp = generateRandomNumber(6);
+        const otp = generateRandomNumber(4);
 
         // luu vao database
         await ForgotPassword.create({
@@ -347,6 +352,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
             otp: otp,
             expiresAt: new Date(Date.now() + 5*60*1000)
         });
+
+        console.log("-----")
         
         const content = `Mã OTP của bạn là <b>${otp}</b>. <i>Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã cho bất kỳ ai!</i>`;
         sendMail(email, 'OTP FORGOT PASSWORD', content);
@@ -360,7 +367,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({
             code: 400,
-            message: 'Failed forgot password.' 
+            message: 'Failed forgot password. ' + error 
         });
     }
 }
@@ -393,11 +400,11 @@ export const passwordOtp = async (req: Request, res: Response) => {
         }
         else
         {
-            await forgotPassword.update({
+            await ForgotPassword.update({
                 verify_otp: true
             }, {
                 where: {
-                    forgot_password_id: forgotPassword["forgotPassword"]
+                    forgot_password_id: forgotPassword["forgot_password_id"]
                 }
             })
         }
@@ -463,6 +470,80 @@ export const resetPassword = async (req: Request, res: Response) => {
         return res.json({ 
             code: 400,
             message: "Error in reset password."
+        });
+    }
+}
+
+//[POST] /user/refresh-token
+export const refreshToken = async (req: Request, res: Response) => {
+    const {refreshToken} = req.body;
+    if(!refreshToken)
+    {
+        return res.json({ 
+            code: 401,
+            message: "Refresh token is required"
+        });
+    }
+    try {
+        const tokenData = await VerificationToken.findOne({
+            where: {
+                verif_token: refreshToken,
+                token_type: "refresh",
+                expire_date: {
+                    [Op.gte]: new Date(Date.now())
+                }
+            },
+            raw: true
+        });
+        if(!tokenData)
+        {
+            return res.json({ 
+                code: 401,
+                message: "Invalid refresh token"
+            });
+        }
+
+        const credential = await Credential.findOne({
+            where:{
+                credential_id: tokenData["credential_id"]
+            },
+            raw: true
+        })
+
+        const role = await Role.findOne({
+            where: {
+                role_id: credential['role_id']
+            },
+            raw: true
+        })
+        // Tạo accessToken
+        const newAccessToken = jwt.sign({ credential_id: tokenData["credential_id"], role: role['title']}, process.env.SECRET_KEY, { expiresIn: '12h'});
+
+        await VerificationToken.destroy({
+            where:{
+                token_type: "access",
+                credential_id: tokenData["credential_id"],
+            }
+        });
+
+        const verifycation_data = {
+            credential_id: tokenData["credential_id"],
+            token_type: "access",
+            verif_token: newAccessToken,
+            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
+            // expire_date: new Date(Date.now() + 1000)
+        };
+
+        await VerificationToken.create(verifycation_data)
+
+        return res.json({
+            code: 200,
+            token: newAccessToken
+        });
+    } catch (error) {
+        return res.json({ 
+            code: 400,
+            message: "Error refreshing token."
         });
     }
 }

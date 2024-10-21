@@ -33,6 +33,10 @@ const Admin = sequelize.define("Admin", {
             model: "credentials",
             key: "credential_id"
         }
+    },
+    deleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false, // Đặt giá trị mặc định là false
     }
 }, {
     timestamps: true,

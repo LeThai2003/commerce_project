@@ -12,7 +12,7 @@ import verifyToken from "../../middlewares/client/verifyToken.middleware";
 import { addressRoute } from "./address.route";
 import { commentRoute } from "./comment.route";
 import { blogRoute } from "./blog.route";
-
+import { contactRoute } from "./contact.route";
 
 
 const clientRoutes = (app: Express): void => {
@@ -34,6 +34,8 @@ const clientRoutes = (app: Express): void => {
     app.use("/rate", rateRoute);
 
     app.use("/comment", commentRoute);
+
+    app.use("/contacts", contactRoute);
 
     app.use("/blogs", blogRoute);
 

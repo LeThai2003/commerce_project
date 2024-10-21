@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.passwordOtp = exports.forgotPassword = exports.logout = exports.login = exports.createPost = exports.getCreate = exports.index = void 0;
+exports.deleteAccount = exports.resetDefaultPassword = exports.resetPassword = exports.passwordOtp = exports.forgotPassword = exports.logout = exports.login = exports.createPost = exports.getCreate = exports.editAccountPost = exports.detail = exports.index = void 0;
 const roles_model_1 = __importDefault(require("../../models/roles.model"));
 const admin_model_1 = __importDefault(require("../../models/admin.model"));
 const sequelize_1 = require("sequelize");
@@ -25,14 +25,43 @@ const send_mail_helper_1 = __importDefault(require("../../helpers/send-mail.help
 const systemConfig_1 = __importDefault(require("../../configs/systemConfig"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const accounts = yield database_1.default.query(`
-                SELECT admins.first_name, admins.last_name, admins.image_url, admins.phone, admins.email FROM 
-                admins join credentials on admins.credential_id = credentials.credential_id
-                    where credentials.is_enabled != 0
-            `, {
-            raw: true,
-            type: sequelize_1.QueryTypes.SELECT,
+        const find = {
+            deleted: false
+        };
+        if (req.query["first_name"]) {
+            find["first_name"] = sequelize_1.Sequelize.where(sequelize_1.Sequelize.fn('LOWER', sequelize_1.Sequelize.col('first_name')), {
+                [sequelize_1.Op.like]: '%' + req.query["first_name"].toLowerCase() + '%'
+            });
+        }
+        if (req.query["last_name"]) {
+            find["last_name"] = sequelize_1.Sequelize.where(sequelize_1.Sequelize.fn('LOWER', sequelize_1.Sequelize.col('last_name')), {
+                [sequelize_1.Op.like]: '%' + req.query["last_name"].toLowerCase() + '%'
+            });
+        }
+        if (req.query["email"]) {
+            find["email"] = {
+                [sequelize_1.Op.like]: '%' + req.query["email"] + '%'
+            };
+        }
+        if (req.query["phone"]) {
+            find["phone"] = {
+                [sequelize_1.Op.like]: '%' + req.query["phone"] + '%'
+            };
+        }
+        const accounts = yield admin_model_1.default.findAll({
+            where: find,
+            attributes: { exclude: ['createdAt', 'updatedAt'] },
+            raw: true
         });
+        for (const account of accounts) {
+            const infoCredential = yield credential_model_1.default.findOne({
+                where: {
+                    credential_id: account["credential_id"],
+                },
+                raw: true
+            });
+            account["username"] = infoCredential["username"];
+        }
         return res.json({
             code: 200,
             message: "Lấy danh sách roles",
@@ -47,6 +76,63 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.index = index;
+const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const admin = res.locals.admin;
+        console.log(admin);
+        const data = admin;
+        const credential = yield credential_model_1.default.findOne({
+            where: {
+                credential_id: admin["credential_id"]
+            },
+            attributes: { exclude: ['password', 'createdAt', 'updatedAt'] },
+            raw: true
+        });
+        console.log(credential);
+        const role = yield roles_model_1.default.findOne({
+            where: {
+                role_id: credential["role_id"],
+            },
+            raw: true
+        });
+        data["username"] = credential["username"];
+        data["role"] = role["title"];
+        data["user_id"] = admin["admin_id"];
+        return res.json({
+            code: 200,
+            message: "Lấy tài khoản thành công",
+            data: data
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 500,
+            message: "Lỗi lấy tài khoản " + error
+        });
+    }
+});
+exports.detail = detail;
+const editAccountPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const admin = res.locals.admin;
+        yield admin_model_1.default.update(Object.assign({}, req.body), {
+            where: {
+                admin_id: admin["admin_id"]
+            }
+        });
+        return res.json({
+            code: 200,
+            message: "Cập nhật tài khoản thành công"
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 500,
+            message: "Lỗi cập nhật tài khoản " + error
+        });
+    }
+});
+exports.editAccountPost = editAccountPost;
 const getCreate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const roles = yield roles_model_1.default.findAll({
@@ -125,7 +211,10 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const credential = yield credential_model_1.default.findOne({
             where: {
-                username: username
+                username: username,
+                role_id: {
+                    [sequelize_1.Op.ne]: 12
+                }
             },
             raw: true
         });
@@ -142,9 +231,15 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 message: 'Mật khẩu không đúng'
             });
         }
-        const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
-        const refreshToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
-        const token = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
+        console.log(credential);
+        const role = yield roles_model_1.default.findOne({
+            where: {
+                role_id: credential['role_id']
+            },
+            raw: true
+        });
+        const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"], role: role['title'] }, process.env.SECRET_KEY, { expiresIn: '24h' });
+        const refreshToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"], role: role['title'] }, process.env.SECRET_KEY, { expiresIn: '7d' });
         const verifycation_data = {
             credential_id: credential["credential_id"],
             token_type: "access",
@@ -176,7 +271,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (error) {
         return res.json({
             code: "400",
-            message: 'Error ( login ): ',
+            message: 'Error ( login ): ' + error,
         });
     }
 });
@@ -340,3 +435,69 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.resetPassword = resetPassword;
+const resetDefaultPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const adminId = req.params["admin_id"];
+        const defaultPassword = yield bcrypt_1.default.hash("123", 10);
+        const admin = yield admin_model_1.default.findOne({
+            where: {
+                admin_id: adminId
+            },
+            raw: true
+        });
+        yield credential_model_1.default.update({
+            password: defaultPassword
+        }, {
+            where: {
+                credential_id: admin["credential_id"]
+            }
+        });
+        return res.json({
+            code: 200,
+            message: "Reset default password successfully"
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Error Reset default password " + error
+        });
+    }
+});
+exports.resetDefaultPassword = resetDefaultPassword;
+const deleteAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const adminId = req.params["admin_id"];
+        const admin = yield admin_model_1.default.findOne({
+            where: {
+                admin_id: adminId
+            },
+            raw: true
+        });
+        yield credential_model_1.default.update({
+            deleted: 1
+        }, {
+            where: {
+                credential_id: admin["credential_id"]
+            }
+        });
+        yield admin_model_1.default.update({
+            deleted: 1
+        }, {
+            where: {
+                admin_id: adminId
+            }
+        });
+        return res.json({
+            code: 200,
+            message: "Deleted account successfully"
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Error Deleted account " + error
+        });
+    }
+});
+exports.deleteAccount = deleteAccount;

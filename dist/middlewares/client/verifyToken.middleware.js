@@ -16,60 +16,8 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const jsonwebtoken_2 = require("jsonwebtoken");
 const credential_model_1 = __importDefault(require("../../models/credential.model"));
 const verification_token_model_1 = __importDefault(require("../../models/verification-token.model"));
-const sequelize_1 = require("sequelize");
 const user_model_1 = __importDefault(require("../../models/user.model"));
 const console_1 = require("console");
-const refreshTokenHandler = (token) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!token) {
-        return {
-            code: 402,
-            message: "Yêu cầu refresh token"
-        };
-    }
-    try {
-        console.log("đi vào đây");
-        const tokenData = yield verification_token_model_1.default.findOne({
-            where: {
-                verif_token: token,
-                token_type: "refresh",
-                expire_date: {
-                    [sequelize_1.Op.gte]: new Date(Date.now())
-                }
-            },
-            raw: true
-        });
-        if (!tokenData) {
-            return {
-                code: 401,
-                message: "Token không hợp lệ"
-            };
-        }
-        yield verification_token_model_1.default.destroy({
-            where: {
-                credential_id: tokenData["credential_id"],
-                token_type: "access"
-            }
-        });
-        const newAccessToken = jsonwebtoken_1.default.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
-        const verificationData = {
-            credential_id: tokenData["credential_id"],
-            token_type: "access",
-            verif_token: newAccessToken,
-            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
-        };
-        yield verification_token_model_1.default.create(verificationData);
-        return {
-            code: 200,
-            token: newAccessToken
-        };
-    }
-    catch (error) {
-        return {
-            code: 500,
-            message: "Error refreshing token."
-        };
-    }
-});
 const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     let accessToken = req.headers["authorization"];
     console.log("Logout: ==============1==========" + accessToken);
@@ -119,49 +67,9 @@ const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
         }
         catch (error) {
             if (error instanceof jsonwebtoken_2.TokenExpiredError) {
-                console.log("Logout: ========================hết hạn===============");
-                const decoded = jsonwebtoken_1.default.decode(accessToken);
-                const { credential_id } = decoded;
-                console.log("Logout: =============2===========" + credential_id);
-                const record = yield verification_token_model_1.default.findOne({
-                    where: {
-                        credential_id: credential_id,
-                        token_type: "refresh",
-                    },
-                    raw: true,
-                });
-                const refreshToken = record["verif_token"];
-                if (refreshToken) {
-                    const refreshResult = yield refreshTokenHandler(refreshToken);
-                    if (refreshResult.code === 200) {
-                        res.setHeader('Access-Control-Expose-Headers', 'accesstoken');
-                        res.setHeader('accesstoken', refreshResult.token);
-                        const user = yield user_model_1.default.findOne({
-                            where: {
-                                credential_id: credential_id
-                            },
-                            raw: true
-                        });
-                        res.locals.user = user;
-                        next();
-                    }
-                    else {
-                        return res.json({
-                            code: refreshResult.code
-                        });
-                    }
-                }
-                else {
-                    return res.json({
-                        code: 401,
-                        message: 'Token hết hạn hoặc không có token'
-                    });
-                }
-            }
-            else {
                 return res.json({
-                    code: 401,
-                    message: 'Token không hợp lệ. Từ chối truy cập --1-'
+                    code: 400,
+                    message: "access-token-expired"
                 });
             }
         }

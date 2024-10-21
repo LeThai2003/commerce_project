@@ -18,6 +18,7 @@ const create_tree_helper_1 = require("../../helpers/create-tree.helper");
 const pagination_helper_1 = require("../../helpers/pagination.helper");
 const database_1 = __importDefault(require("../../configs/database"));
 const sequelize_1 = require("sequelize");
+const order_item_model_1 = __importDefault(require("../../models/order-item.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const listCategories = yield category_model_1.default.findAll({
@@ -185,7 +186,42 @@ const editPatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.editPatch = editPatch;
 const del = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { category_id } = req.params;
+        const category_id = req.params.category_id;
+        let ids = yield database_1.default.query(`
+            WITH RECURSIVE category_hierarchy AS (
+                SELECT category_id, parent_category_id, category_title
+                FROM categories
+                WHERE category_id = ${parseInt(category_id)} 
+
+                UNION ALL
+
+                SELECT c.category_id, c.parent_category_id, c.category_title
+                FROM categories c
+                INNER JOIN category_hierarchy ch ON c.parent_category_id = ch.category_id
+            )
+            SELECT p.product_id
+            FROM products p
+            WHERE p.category_id IN (SELECT category_id FROM category_hierarchy);
+        `, {
+            raw: true,
+            type: sequelize_1.QueryTypes.SELECT
+        });
+        for (const item of ids) {
+            const product_id = item["product_id"];
+            console.log(product_id);
+            const orderItemExist = yield order_item_model_1.default.findOne({
+                where: {
+                    product_id: product_id,
+                },
+                raw: true
+            });
+            if (orderItemExist) {
+                return res.json({
+                    code: 400,
+                    message: "Xóa danh mục thất bại, vì có sản phẩm được mua!"
+                });
+            }
+        }
         yield category_model_1.default.update({
             deleted: 1
         }, {
@@ -200,7 +236,7 @@ const del = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi xóa danh mục"
         });
     }

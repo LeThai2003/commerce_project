@@ -13,10 +13,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.topRate = exports.index = void 0;
+const user_model_1 = __importDefault(require("../../models/user.model"));
 const product_model_1 = __importDefault(require("../../models/product.model"));
 const sequelize_1 = require("sequelize");
 const rate_model_1 = __importDefault(require("../../models/rate.model"));
 const database_1 = __importDefault(require("../../configs/database"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const wishlist_model_1 = __importDefault(require("../../models/wishlist.model"));
 const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { productId, rate } = req.params;
@@ -59,12 +62,14 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.index = index;
 const topRate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const limit = req.params.limit;
+        console.log(limit);
         const dataTopRating = yield database_1.default.query(`
             SELECT product_id, AVG(star) as rating
             FROM rate
             GROUP BY product_id
             ORDER BY rating DESC
-            LIMIT 6    
+            LIMIT ${limit} 
         `, {
             raw: true,
             type: sequelize_1.QueryTypes.SELECT,
@@ -88,16 +93,72 @@ const topRate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         for (const item of dataTopRating) {
             newProducts.push(Object.assign(Object.assign({}, item), products.find(infoProduct => infoProduct["product_id"] === item["product_id"])));
         }
+        let accessToken = req.headers["authorization"];
+        let user = null;
+        if (accessToken && accessToken.trim() !== "Bearer") {
+            accessToken = accessToken.split(" ")[1];
+            const decoded = jsonwebtoken_1.default.decode(accessToken);
+            const { credential_id } = decoded;
+            user = yield user_model_1.default.findOne({
+                where: {
+                    credential_id: credential_id
+                },
+                raw: true
+            });
+        }
+        ;
+        for (const item of newProducts) {
+            const newPrice = item["price_unit"] * (1 - (item["discount"] || 0) / 100);
+            item["newPrice"] = newPrice;
+            const countQuantitySale = yield database_1.default.query(`
+                SELECT SUM(order_items.ordered_quantity) AS total_quantity_sold
+                FROM orders
+                JOIN payments ON orders.order_id = payments.order_id
+                JOIN order_items ON order_items.order_id = orders.order_id
+                WHERE payments.payment_status = 'Đã giao'
+                AND order_items.product_id = ${item["product_id"]};
+            `, {
+                type: sequelize_1.QueryTypes.SELECT,
+                raw: true
+            });
+            item["total_quantity_sold"] = parseInt(countQuantitySale[0]["total_quantity_sold"]) || 0;
+            const ratingAVG = yield database_1.default.query(`
+                SELECT AVG(rate.star) as rating 
+                FROM rate
+                WHERE rate.product_id = ${item["product_id"]}
+            `, {
+                raw: true,
+                type: sequelize_1.QueryTypes.SELECT
+            });
+            item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
+            if (user) {
+                const existRecodeProductLike = yield wishlist_model_1.default.findOne({
+                    where: {
+                        product_id: item["product_id"],
+                        user_id: user["user_id"]
+                    }
+                });
+                if (existRecodeProductLike) {
+                    item["like"] = true;
+                }
+                else {
+                    item["like"] = false;
+                }
+            }
+            else {
+                item["like"] = false;
+            }
+        }
         return res.json({
             code: 200,
-            message: "Lấy danh sách comment thành công",
+            message: "Lấy danh sách topRating thành công",
             data: newProducts
         });
     }
     catch (error) {
         return res.json({
             code: 500,
-            message: "Lỗi lấy danh sách comment " + error
+            message: "Lỗi lấy danh sách topRating " + error
         });
     }
 });

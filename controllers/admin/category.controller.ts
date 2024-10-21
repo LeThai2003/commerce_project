@@ -3,7 +3,8 @@ import Category from "../../models/category.model";
 import { createTreeHelper } from "../../helpers/create-tree.helper";
 import { paginationHelper } from "../../helpers/pagination.helper";
 import sequelize from "../../configs/database";
-import { QueryTypes } from "sequelize";
+import { QueryTypes, where } from "sequelize";
+import OrderItem from "../../models/order-item.model";
 
 
 
@@ -227,7 +228,45 @@ export const editPatch = async (req: Request, res: Response) => {
 export const del = async (req: Request, res: Response) => {
     try {
 
-        const {category_id} = req.params;
+        const category_id = req.params.category_id as string;
+
+        let ids = await sequelize.query(`
+            WITH RECURSIVE category_hierarchy AS (
+                SELECT category_id, parent_category_id, category_title
+                FROM categories
+                WHERE category_id = ${parseInt(category_id)} 
+
+                UNION ALL
+
+                SELECT c.category_id, c.parent_category_id, c.category_title
+                FROM categories c
+                INNER JOIN category_hierarchy ch ON c.parent_category_id = ch.category_id
+            )
+            SELECT p.product_id
+            FROM products p
+            WHERE p.category_id IN (SELECT category_id FROM category_hierarchy);
+        `, {
+            raw: true,
+            type: QueryTypes.SELECT
+        })  // list product's id of a category
+
+        for (const item of ids) {
+            const product_id = item["product_id"];
+            console.log(product_id);
+            const orderItemExist = await OrderItem.findOne({
+                where:{
+                    product_id: product_id,
+                },
+                raw: true
+            });
+            if(orderItemExist)
+            {
+                return res.json({
+                    code: 400,
+                    message: "Xóa danh mục thất bại, vì có sản phẩm được mua!"
+                })
+            }
+        }
 
         await Category.update({
             deleted: 1
@@ -244,7 +283,7 @@ export const del = async (req: Request, res: Response) => {
 
     } catch (error) {
         return res.json({
-            code: 400,
+            code: 500,
             message: "Lỗi xóa danh mục"
         })
     }

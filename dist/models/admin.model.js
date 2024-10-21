@@ -37,6 +37,10 @@ const Admin = database_1.default.define("Admin", {
             model: "credentials",
             key: "credential_id"
         }
+    },
+    deleted: {
+        type: sequelize_1.DataTypes.BOOLEAN,
+        defaultValue: false,
     }
 }, {
     timestamps: true,

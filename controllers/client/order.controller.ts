@@ -67,7 +67,7 @@ export const index = async (req: Request, res: Response) => {
                 raw: true,
             });
 
-            const newPrice = Math.ceil(infoProduct["price_unit"] * ( 1 - infoProduct["discount"] / 100));
+            const newPrice = Math.ceil(infoProduct["price_unit"] * ( 1 - (infoProduct["discount"] || 0) / 100));
             const totalPriceItem = newPrice * item["ordered_quantity"];
             totalPrice += totalPriceItem;
 
@@ -107,8 +107,10 @@ export const index = async (req: Request, res: Response) => {
             // payment
             await Payment.create({
                 order_id: orders.dataValues["order_id"],
-                is_payed: 0, // giả sử mặc định là chưa trả
-                payment_status: "Đang xử lý", // pending
+                is_payed: 1, 
+                payment_status: "Đã giao",
+                // is_payed: 0, // giả sử mặc định là chưa trả
+                // payment_status: "Đang xử lý", // pending
             });
         }
         else

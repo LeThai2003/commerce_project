@@ -33,8 +33,9 @@ const verifyToken_middleware_1 = __importDefault(require("../../middlewares/clie
 const router = express_1.default.Router();
 router.get("/", controller.index);
 router.get("/:productId", controller.detail);
-router.patch("/like/:type/:productId", verifyToken_middleware_1.default, controller.like);
+router.patch("/like/:productId", verifyToken_middleware_1.default, controller.like);
 router.get("/list/favorite", verifyToken_middleware_1.default, controller.wishlist);
+router.get("/list/top-sold", controller.topSold);
 router.delete("/delete/favorite/:productId", verifyToken_middleware_1.default, controller.deleteFavoriteProduct);
 router.post("/wishlist/add-to-cart", verifyToken_middleware_1.default, controller.addToCartFromWishlist);
 exports.productRoute = router;

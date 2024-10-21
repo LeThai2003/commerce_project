@@ -15,12 +15,14 @@ router.post(
 
 router.get("/verify-email", controller.verifyEmail); // xác thực email -- login
 
-router.post("/logout", verifyToken, controller.logout);
+router.post("/logout", controller.logout);
 
 router.post("/password/forgot", forgotPasswordValidation, controller.forgotPassword);
 
 router.post("/password/otp", controller.passwordOtp); // xác thực email -- forgot pass
 
 router.post("/password/reset", resetPasswordValidation, controller.resetPassword);
+
+router.post("/refresh-token", controller.refreshToken);
 
 export const userRoutes : Router = router;

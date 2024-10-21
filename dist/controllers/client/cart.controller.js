@@ -149,7 +149,7 @@ const add = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (error) {
         return res.json({
             code: 500,
-            message: "Lỗi thêm sản phẩm vào giỏ hàng"
+            message: "Lỗi thêm sản phẩm vào giỏ hàng" + error
         });
     }
 });

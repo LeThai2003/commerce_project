@@ -32,9 +32,15 @@ const controller = __importStar(require("../../controllers/admin/blog.controller
 const multer_1 = __importDefault(require("multer"));
 const upload = (0, multer_1.default)();
 const uploadToCloud_1 = require("../../middlewares/admin/uploadToCloud");
+const verifyToken_middleware_1 = __importDefault(require("../../middlewares/admin/verifyToken.middleware"));
 const router = express_1.default.Router();
-router.get("/", controller.index);
+router.get("/", verifyToken_middleware_1.default, controller.index);
+router.get("/detail/:blog_id", controller.detail);
 router.post("/create", upload.fields([
     { name: 'image_url', maxCount: 5 }
 ]), uploadToCloud_1.uploadFields, controller.createPost);
+router.patch("/edit/:blog_id", upload.fields([
+    { name: 'image_url', maxCount: 5 }
+]), uploadToCloud_1.uploadFields, controller.editPatch);
+router.delete("/delete/:blog_id", controller.deleteBlog);
 exports.blogRoute = router;

@@ -103,9 +103,30 @@ export const index = async (req: Request, res: Response) => {
 
         // console.log("----------------------------------------")
 
+        let user = null;
+
+        let accessToken = req.headers["authorization"];
+
+
+
+        if(accessToken && accessToken.trim() !== "Bearer")
+        {
+            accessToken = accessToken.split(" ")[1];
+            const decoded = jwt.decode(accessToken);
+            const { credential_id } = decoded;
+
+            user = await User.findOne({
+                where: {
+                    credential_id: credential_id
+                },
+                raw: true
+            })
+        };
+        
+
         // ---- giá mới + đếm số lượng sản phẩm đã bán + rating ---
         for (const item of products) {
-            const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
+            const newPrice = item["price_unit"] * (1 - (item["discount"] || 0) / 100);
             item["newPrice"] = newPrice;
 
             const countQuantitySale = await sequelize.query(`
@@ -133,7 +154,29 @@ export const index = async (req: Request, res: Response) => {
 
             // console.log(parseFloat(ratingAVG[0]["rating"]))
 
-            item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0
+            item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
+
+            if(user)
+            {
+                const existRecodeProductLike = await Wishlist.findOne({
+                    where: {
+                        product_id: item["product_id"],
+                        user_id: user["user_id"] 
+                    }
+                });
+                if(existRecodeProductLike)
+                {
+                    item["like"] = true;
+                }
+                else
+                {
+                    item["like"] = false;
+                }
+            }
+            else
+            {
+                item["like"] = false;
+            }
         }
 
         // rate
@@ -199,43 +242,28 @@ export const index = async (req: Request, res: Response) => {
     }
 }
 
-//[POST] /products/like/:type/:productId
+//[POST] /products/like/:productId
 export const like = async (req: Request, res: Response) => {
     try {
         const {productId} = req.params;
-        const credential_id = req["credential_id"];
-        const isLike = req.params["type"];
 
         let user = res.locals.user;
-
-        if(!user)
-        {
-            user = await User.findOne({
-                where: {
-                    credential_id: credential_id
-                },
-                raw: true
-            });    
-        }
         
-        if(isLike === "yes")
-        {
-            const existRecord = await Wishlist.findOne({
-                where:{
-                    user_id: user["user_id"],
-                    product_id: parseInt(productId)
-                },
-                raw: true
-            });
+        const existRecord = await Wishlist.findOne({
+            where:{
+                user_id: user["user_id"],
+                product_id: parseInt(productId)
+            },
+            raw: true
+        });
 
-            if(!existRecord)
-            {
-                await Wishlist.create({
-                    user_id: user["user_id"],
-                    product_id: parseInt(productId),
-                    like_date: new Date(Date.now())
-                })
-            }
+        if(!existRecord)
+        {
+            await Wishlist.create({
+                user_id: user["user_id"],
+                product_id: parseInt(productId),
+                like_date: new Date(Date.now())
+            })
         }
         else
         {
@@ -383,6 +411,108 @@ export const detail = async (req: Request, res: Response) => {
             rating: parseFloat(ratingAVG[0]["rating"]) || 0,
             like: like,
             commented: isCommented
+        })
+    } catch (error) {
+        return res.json({
+            code: 400,
+            message: "Load dữ liệu chi tiết sản phẩm thất bại " + error
+        })
+    }
+}
+
+//[GET] /products/list/top-sold"
+export const topSold = async (req: Request, res: Response) => {
+    try {
+        
+        const data = await sequelize.query(`
+            SELECT order_items.product_id, SUM(order_items.ordered_quantity) as total_quantity_sold from 
+            payments JOIN order_items on payments.order_id = order_items.order_id and payments.payment_status='Đã giao'
+            JOIN products on products.product_id = order_items.product_id
+            GROUP BY order_items.product_id
+            ORDER BY total_quantity_sold DESC
+            LIMIT 20            
+        `, {
+            raw: true,
+            type: QueryTypes.SELECT
+        });
+
+        console.log(data);
+
+        // [
+        //     { product_id: 8, quantity_count: '5' },
+        //     { product_id: 2, quantity_count: '3' },
+        //     { product_id: 9, quantity_count: '3' },
+        //     { product_id: 3, quantity_count: '1' },
+        //     { product_id: 1, quantity_count: '1' }
+        // ]
+        let accessToken = req.headers["authorization"];
+        let user = null;
+
+        if(accessToken && accessToken.trim() !== "Bearer")
+        {
+            accessToken = accessToken.split(" ")[1];
+            const decoded = jwt.decode(accessToken);
+            const { credential_id } = decoded;
+
+            user = await User.findOne({
+                where: {
+                    credential_id: credential_id
+                },
+                raw: true
+            })
+        };
+
+        for (const item of data) {
+            const productId = item["product_id"];
+            item["total_quantity_sold"] = parseInt(item["total_quantity_sold"])
+            const infoProduct = await Product.findOne({
+                where:{
+                    product_id: productId,
+                },
+                attributes: {exclude:['updatedAt', 'createdAt', 'deleted', 'product_id']},
+                raw: true
+            });
+            item["infoProduct"] = infoProduct
+
+            // rate
+            const ratingAVG = await sequelize.query(`
+                SELECT AVG(rate.star) as rating 
+                FROM rate
+                WHERE rate.product_id = ${productId}
+            `, {
+                raw: true,
+                type: QueryTypes.SELECT
+            });
+            item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
+
+            //like
+            if(user)
+            {
+                const existRecodeProductLike = await Wishlist.findOne({
+                    where: {
+                        product_id: item["product_id"],
+                        user_id: user["user_id"] 
+                    }
+                });
+                if(existRecodeProductLike)
+                {
+                    item["like"] = true;
+                }
+                else
+                {
+                    item["like"] = false;
+                }
+            }
+            else
+            {
+                item["like"] = false;
+            }
+        }
+
+        return res.json({
+            code: 200,
+            message: "Load dữ liệu chi tiết sản phẩm thành công",
+            data: data
         })
     } catch (error) {
         return res.json({

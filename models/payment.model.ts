@@ -25,7 +25,11 @@ const Payment = sequelize.define("Payment", {
       defaultValue: "cash"
     },
     payment_status: {
-        type: DataTypes.STRING(50),
+        type: DataTypes.INTEGER,
+        references: {
+          model: "paymentstatus",
+          key: "id"
+        }
     },
     deleted: {
         type: DataTypes.BOOLEAN,

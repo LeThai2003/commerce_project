@@ -48,8 +48,12 @@ const getProductCategory = (req, res) => __awaiter(void 0, void 0, void 0, funct
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 5;
         const offset = (page - 1) * limit;
-        const sortKey = req.query.sortKey.toUpperCase() || 'product_title';
-        const sortValue = req.query.sortValue.toUpperCase() || 'ASC';
+        let sortKey = 'product_title';
+        let sortValue = 'ASC';
+        if (req.query.sortKey && req.query.sortValue) {
+            sortKey = req.query.sortKey.toUpperCase();
+            sortValue = req.query.sortValue.toUpperCase();
+        }
         let searchKey = req.query.searchKey || "";
         searchKey = (0, convert_to_slug_helper_1.convertToSlug)(searchKey.toLowerCase());
         const products = yield database_1.default.query(`

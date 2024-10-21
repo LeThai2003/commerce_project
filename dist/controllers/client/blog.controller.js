@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.listBlog = exports.postComment = void 0;
 const comment_model_1 = __importDefault(require("../../models/comment.model"));
 const blog_model_1 = __importDefault(require("../../models/blog.model"));
+const pagination_helper_1 = require("../../helpers/pagination.helper");
 const postComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { productId } = req.params;
@@ -50,10 +51,14 @@ const listBlog = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             raw: true
         });
         console.log(blogsList);
+        const objectPagination = (0, pagination_helper_1.paginationHelper)(req, blogsList.length);
+        const paginatedBlogs = blogsList.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
         return res.json({
             code: 200,
             message: "Lấy danh sách blogs thành công",
-            data: blogsList
+            data: paginatedBlogs,
+            totalPage: objectPagination["totalPage"],
+            pageNow: objectPagination["page"]
         });
     }
     catch (error) {

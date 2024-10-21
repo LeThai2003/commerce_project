@@ -16,6 +16,7 @@ const verifyToken_middleware_1 = __importDefault(require("../../middlewares/clie
 const address_route_1 = require("./address.route");
 const comment_route_1 = require("./comment.route");
 const blog_route_1 = require("./blog.route");
+const contact_route_1 = require("./contact.route");
 const clientRoutes = (app) => {
     app.use("/categories", category_route_1.categoryRoutes);
     app.use("/products", product_route_1.productRoute);
@@ -26,6 +27,7 @@ const clientRoutes = (app) => {
     app.use("/account", verifyToken_middleware_1.default, account_route_1.accountRoutes);
     app.use("/rate", rate_route_1.rateRoute);
     app.use("/comment", comment_route_1.commentRoute);
+    app.use("/contacts", contact_route_1.contactRoute);
     app.use("/blogs", blog_route_1.blogRoute);
     app.use(`/upload`, upload_route_1.uploadRoute);
     app.use(`/address`, verifyToken_middleware_1.default, address_route_1.addressRoute);

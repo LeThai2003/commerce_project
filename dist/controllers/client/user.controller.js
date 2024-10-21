@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.passwordOtp = exports.forgotPassword = exports.logout = exports.verifyEmail = exports.register = exports.login = void 0;
+exports.refreshToken = exports.resetPassword = exports.passwordOtp = exports.forgotPassword = exports.logout = exports.verifyEmail = exports.register = exports.login = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const jsonwebtoken_2 = require("jsonwebtoken");
@@ -23,6 +23,7 @@ const verification_token_model_1 = __importDefault(require("../../models/verific
 const sequelize_1 = require("sequelize");
 const generate_helper_1 = require("../../helpers/generate.helper");
 const forgotPassword_model_1 = __importDefault(require("../../models/forgotPassword.model"));
+const roles_model_1 = __importDefault(require("../../models/roles.model"));
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.body);
     const { username, password } = req.body;
@@ -46,9 +47,14 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 message: 'Mật khẩu không đúng'
             });
         }
-        const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '1m' });
-        const refreshToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
-        const token = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
+        const role = yield roles_model_1.default.findOne({
+            where: {
+                role_id: credential['role_id']
+            },
+            raw: true
+        });
+        const accessToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"], role: role['title'] }, process.env.SECRET_KEY, { expiresIn: '12h' });
+        const refreshToken = jsonwebtoken_1.default.sign({ credential_id: credential["credential_id"], role: role['title'] }, process.env.SECRET_KEY, { expiresIn: '7d' });
         const verifycation_data = {
             credential_id: credential["credential_id"],
             token_type: "access",
@@ -80,7 +86,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (error) {
         return res.json({
             code: "400",
-            message: 'Error ( login ): ',
+            message: 'Error ( login ): ' + error,
         });
     }
 });
@@ -192,7 +198,7 @@ const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (accessToken) {
         try {
             accessToken = accessToken.split(" ")[1];
-            const decoded = jsonwebtoken_1.default.verify(accessToken, process.env.SECRET_KEY);
+            const decoded = jsonwebtoken_1.default.decode(accessToken, process.env.SECRET_KEY);
             const { credential_id } = decoded;
             yield verification_token_model_1.default.destroy({
                 where: {
@@ -254,12 +260,13 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 message: "Email không tồn tại"
             });
         }
-        const otp = (0, generate_helper_1.generateRandomNumber)(6);
+        const otp = (0, generate_helper_1.generateRandomNumber)(4);
         yield forgotPassword_model_1.default.create({
             email: email,
             otp: otp,
             expiresAt: new Date(Date.now() + 5 * 60 * 1000)
         });
+        console.log("-----");
         const content = `Mã OTP của bạn là <b>${otp}</b>. <i>Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã cho bất kỳ ai!</i>`;
         (0, send_mail_helper_1.default)(email, 'OTP FORGOT PASSWORD', content);
         return res.json({
@@ -271,7 +278,7 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
     catch (error) {
         return res.json({
             code: 400,
-            message: 'Failed forgot password.'
+            message: 'Failed forgot password. ' + error
         });
     }
 });
@@ -299,11 +306,11 @@ const passwordOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return;
         }
         else {
-            yield forgotPassword.update({
+            yield forgotPassword_model_1.default.update({
                 verify_otp: true
             }, {
                 where: {
-                    forgot_password_id: forgotPassword["forgotPassword"]
+                    forgot_password_id: forgotPassword["forgot_password_id"]
                 }
             });
         }
@@ -362,3 +369,67 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.resetPassword = resetPassword;
+const refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+        return res.json({
+            code: 401,
+            message: "Refresh token is required"
+        });
+    }
+    try {
+        const tokenData = yield verification_token_model_1.default.findOne({
+            where: {
+                verif_token: refreshToken,
+                token_type: "refresh",
+                expire_date: {
+                    [sequelize_1.Op.gte]: new Date(Date.now())
+                }
+            },
+            raw: true
+        });
+        if (!tokenData) {
+            return res.json({
+                code: 401,
+                message: "Invalid refresh token"
+            });
+        }
+        const credential = yield credential_model_1.default.findOne({
+            where: {
+                credential_id: tokenData["credential_id"]
+            },
+            raw: true
+        });
+        const role = yield roles_model_1.default.findOne({
+            where: {
+                role_id: credential['role_id']
+            },
+            raw: true
+        });
+        const newAccessToken = jsonwebtoken_1.default.sign({ credential_id: tokenData["credential_id"], role: role['title'] }, process.env.SECRET_KEY, { expiresIn: '12h' });
+        yield verification_token_model_1.default.destroy({
+            where: {
+                token_type: "access",
+                credential_id: tokenData["credential_id"],
+            }
+        });
+        const verifycation_data = {
+            credential_id: tokenData["credential_id"],
+            token_type: "access",
+            verif_token: newAccessToken,
+            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000)
+        };
+        yield verification_token_model_1.default.create(verifycation_data);
+        return res.json({
+            code: 200,
+            token: newAccessToken
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Error refreshing token."
+        });
+    }
+});
+exports.refreshToken = refreshToken;

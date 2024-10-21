@@ -16,10 +16,6 @@ const Role = database_1.default.define("Role", {
         type: sequelize_1.DataTypes.STRING(300),
         allowNull: false
     },
-    permissions: {
-        type: sequelize_1.DataTypes.TEXT('long'),
-        allowNull: true,
-    },
     description: {
         type: sequelize_1.DataTypes.STRING(500),
         allowNull: true

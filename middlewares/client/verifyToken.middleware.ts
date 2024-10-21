@@ -3,75 +3,9 @@ import { TokenExpiredError } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from "express";
 import Credential from "../../models/credential.model";
 import VerificationToken from "../../models/verification-token.model";
-import { Op } from "sequelize";
 import User from "../../models/user.model";
 import { error } from "console";
 
-
-const refreshTokenHandler = async (token: string) => {
-    if (!token) {
-        return {
-            code: 402,
-            message: "Yêu cầu refresh token"
-        };
-    }
-
-    try {
-
-        console.log("đi vào đây");
-
-        const tokenData = await VerificationToken.findOne({
-            where: {
-                verif_token: token,
-                token_type: "refresh",
-                expire_date: {
-                    [Op.gte]: new Date(Date.now())
-                }
-            },
-            raw: true
-        });
-
-        if (!tokenData) {
-            return {
-                code: 401,
-                message: "Token không hợp lệ"
-            };
-        }
-
-        // xóa accessToken cũ 
-        await VerificationToken.destroy({
-            where: {
-                credential_id: tokenData["credential_id"],
-                token_type: "access"
-            }
-        })
-
-        // Tạo accessToken
-        const newAccessToken = jwt.sign({ credential_id: tokenData["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '12h' });
-
-        // lưu access token mới vào cơ sở dữ liệu
-        const verificationData = {
-            credential_id: tokenData["credential_id"],
-            token_type: "access",
-            verif_token: newAccessToken,
-            expire_date: new Date(Date.now() + 12 * 60 * 60 * 1000) // 12 hours
-            // expire_date: new Date(Date.now() + 1000) // 12 hours
-        };
-
-        await VerificationToken.create(verificationData);
-
-        return {
-            code: 200,
-            token: newAccessToken
-        };
-
-    } catch (error) {
-        return {
-            code: 500,
-            message: "Error refreshing token."
-        };
-    }
-};
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     let accessToken = req.headers["authorization"];
@@ -133,65 +67,12 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
         } catch (error) {
             if (error instanceof TokenExpiredError) {
                 // Nếu token hết hạn, gọi hàm refreshToken
-
-                console.log("Logout: ========================hết hạn===============")
-
-                const decoded = jwt.decode(accessToken);
-                
-                const { credential_id } = decoded;
-
-                console.log("Logout: =============2===========" + credential_id);
-
-                const record = await VerificationToken.findOne({
-                    where: {
-                        credential_id: credential_id,
-                        token_type: "refresh",
-                    },
-                    raw: true,
-                });
-
-                const refreshToken = record["verif_token"];
-
-                if (refreshToken) 
-                {
-                    const refreshResult = await refreshTokenHandler(refreshToken);
-
-                    if (refreshResult.code === 200) 
-                    {
-                        res.setHeader('Access-Control-Expose-Headers', 'accesstoken');
-                        res.setHeader('accesstoken', refreshResult.token);
-
-                        const user = await User.findOne({
-                            where: {
-                                credential_id: credential_id
-                            },
-                            raw: true
-                        });
-            
-                        res.locals.user = user;
-
-                        next();
-                    } 
-                    else 
-                    {
-                        return res.json({
-                            code: refreshResult.code
-                        });
-                    }
-                } 
-                else 
-                {
-                    return res.json({
-                        code: 401,
-                        message: 'Token hết hạn hoặc không có token'
-                    });
-                }
-            } else {
                 return res.json({
-                    code: 401,
-                    message: 'Token không hợp lệ. Từ chối truy cập --1-'
-                });
-            }
+                    code: 400,
+                    message: "access-token-expired"
+                })
+                
+            } 
         }
     } else {
         return res.json({

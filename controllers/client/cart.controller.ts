@@ -166,7 +166,7 @@ export const add = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({
             code: 500,
-            message: "Lỗi thêm sản phẩm vào giỏ hàng"
+            message: "Lỗi thêm sản phẩm vào giỏ hàng" +error
         })
     }
 }

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addToCartFromWishlist = exports.deleteFavoriteProduct = exports.wishlist = exports.detail = exports.like = exports.index = void 0;
+exports.addToCartFromWishlist = exports.deleteFavoriteProduct = exports.wishlist = exports.topSold = exports.detail = exports.like = exports.index = void 0;
 const product_model_1 = __importDefault(require("../../models/product.model"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const sequelize_1 = require("sequelize");
@@ -94,8 +94,22 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             order: sort,
             raw: true,
         });
+        let user = null;
+        let accessToken = req.headers["authorization"];
+        if (accessToken && accessToken.trim() !== "Bearer") {
+            accessToken = accessToken.split(" ")[1];
+            const decoded = jsonwebtoken_1.default.decode(accessToken);
+            const { credential_id } = decoded;
+            user = yield user_model_1.default.findOne({
+                where: {
+                    credential_id: credential_id
+                },
+                raw: true
+            });
+        }
+        ;
         for (const item of products) {
-            const newPrice = item["price_unit"] * (1 - item["discount"] / 100);
+            const newPrice = item["price_unit"] * (1 - (item["discount"] || 0) / 100);
             item["newPrice"] = newPrice;
             const countQuantitySale = yield database_1.default.query(`
                 SELECT SUM(order_items.ordered_quantity) AS total_quantity_sold
@@ -118,6 +132,23 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 type: sequelize_1.QueryTypes.SELECT
             });
             item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
+            if (user) {
+                const existRecodeProductLike = yield wishlist_model_1.default.findOne({
+                    where: {
+                        product_id: item["product_id"],
+                        user_id: user["user_id"]
+                    }
+                });
+                if (existRecodeProductLike) {
+                    item["like"] = true;
+                }
+                else {
+                    item["like"] = false;
+                }
+            }
+            else {
+                item["like"] = false;
+            }
         }
         let rate = req.query["rate"];
         if (rate) {
@@ -164,32 +195,20 @@ exports.index = index;
 const like = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { productId } = req.params;
-        const credential_id = req["credential_id"];
-        const isLike = req.params["type"];
         let user = res.locals.user;
-        if (!user) {
-            user = yield user_model_1.default.findOne({
-                where: {
-                    credential_id: credential_id
-                },
-                raw: true
+        const existRecord = yield wishlist_model_1.default.findOne({
+            where: {
+                user_id: user["user_id"],
+                product_id: parseInt(productId)
+            },
+            raw: true
+        });
+        if (!existRecord) {
+            yield wishlist_model_1.default.create({
+                user_id: user["user_id"],
+                product_id: parseInt(productId),
+                like_date: new Date(Date.now())
             });
-        }
-        if (isLike === "yes") {
-            const existRecord = yield wishlist_model_1.default.findOne({
-                where: {
-                    user_id: user["user_id"],
-                    product_id: parseInt(productId)
-                },
-                raw: true
-            });
-            if (!existRecord) {
-                yield wishlist_model_1.default.create({
-                    user_id: user["user_id"],
-                    product_id: parseInt(productId),
-                    like_date: new Date(Date.now())
-                });
-            }
         }
         else {
             yield wishlist_model_1.default.destroy({
@@ -318,6 +337,86 @@ const detail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.detail = detail;
+const topSold = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const data = yield database_1.default.query(`
+            SELECT order_items.product_id, SUM(order_items.ordered_quantity) as total_quantity_sold from 
+            payments JOIN order_items on payments.order_id = order_items.order_id and payments.payment_status='Đã giao'
+            JOIN products on products.product_id = order_items.product_id
+            GROUP BY order_items.product_id
+            ORDER BY total_quantity_sold DESC
+            LIMIT 20            
+        `, {
+            raw: true,
+            type: sequelize_1.QueryTypes.SELECT
+        });
+        console.log(data);
+        let accessToken = req.headers["authorization"];
+        let user = null;
+        if (accessToken && accessToken.trim() !== "Bearer") {
+            accessToken = accessToken.split(" ")[1];
+            const decoded = jsonwebtoken_1.default.decode(accessToken);
+            const { credential_id } = decoded;
+            user = yield user_model_1.default.findOne({
+                where: {
+                    credential_id: credential_id
+                },
+                raw: true
+            });
+        }
+        ;
+        for (const item of data) {
+            const productId = item["product_id"];
+            item["total_quantity_sold"] = parseInt(item["total_quantity_sold"]);
+            const infoProduct = yield product_model_1.default.findOne({
+                where: {
+                    product_id: productId,
+                },
+                attributes: { exclude: ['updatedAt', 'createdAt', 'deleted', 'product_id'] },
+                raw: true
+            });
+            item["infoProduct"] = infoProduct;
+            const ratingAVG = yield database_1.default.query(`
+                SELECT AVG(rate.star) as rating 
+                FROM rate
+                WHERE rate.product_id = ${productId}
+            `, {
+                raw: true,
+                type: sequelize_1.QueryTypes.SELECT
+            });
+            item["rating"] = parseFloat(ratingAVG[0]["rating"]) || 0;
+            if (user) {
+                const existRecodeProductLike = yield wishlist_model_1.default.findOne({
+                    where: {
+                        product_id: item["product_id"],
+                        user_id: user["user_id"]
+                    }
+                });
+                if (existRecodeProductLike) {
+                    item["like"] = true;
+                }
+                else {
+                    item["like"] = false;
+                }
+            }
+            else {
+                item["like"] = false;
+            }
+        }
+        return res.json({
+            code: 200,
+            message: "Load dữ liệu chi tiết sản phẩm thành công",
+            data: data
+        });
+    }
+    catch (error) {
+        return res.json({
+            code: 400,
+            message: "Load dữ liệu chi tiết sản phẩm thất bại " + error
+        });
+    }
+});
+exports.topSold = topSold;
 const wishlist = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = res.locals.user;

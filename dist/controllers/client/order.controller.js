@@ -64,7 +64,7 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 },
                 raw: true,
             });
-            const newPrice = Math.ceil(infoProduct["price_unit"] * (1 - infoProduct["discount"] / 100));
+            const newPrice = Math.ceil(infoProduct["price_unit"] * (1 - (infoProduct["discount"] || 0) / 100));
             const totalPriceItem = newPrice * item["ordered_quantity"];
             totalPrice += totalPriceItem;
             yield order_item_model_1.default.create({
@@ -96,8 +96,8 @@ const index = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (method_payment == 1) {
             yield payment_model_1.default.create({
                 order_id: orders.dataValues["order_id"],
-                is_payed: 0,
-                payment_status: "Đang xử lý",
+                is_payed: 1,
+                payment_status: "Đã giao",
             });
         }
         else {

@@ -32,5 +32,5 @@ const controller = __importStar(require("../../controllers/client/rate.controlle
 const verifyToken_middleware_1 = __importDefault(require("../../middlewares/client/verifyToken.middleware"));
 const router = express_1.default.Router();
 router.patch("/:productId/:rate", verifyToken_middleware_1.default, controller.index);
-router.get("/top-rate", controller.topRate);
+router.get("/top-rate/:limit", controller.topRate);
 exports.rateRoute = router;

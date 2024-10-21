@@ -19,10 +19,18 @@ router.post("/password/reset", controller.resetPassword);
 
 router.use(verifyToken);
 
+router.get("/detail", controller.detail);
+
+router.patch("/edit", controller.editAccountPost);
+
 router.get("/create", controller.getCreate);
 
 router.post("/create", upload.single('image_url'), uploadSingle, controller.createPost);
 
 router.post("/logout", controller.logout);
+
+router.post("/reset-defautl-password/:admin_id", controller.resetDefaultPassword);
+
+router.delete("/delete/:admin_id", controller.deleteAccount);
 
 export const accountRoute : Router = router;

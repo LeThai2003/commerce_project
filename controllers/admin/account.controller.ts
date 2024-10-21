@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Role from "../../models/roles.model";
 import Admin from "../../models/admin.model";
-import { Op, QueryTypes } from "sequelize";
+import { Op, QueryTypes, Sequelize } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Credential from "../../models/credential.model";
@@ -13,15 +13,55 @@ import systemConfig from "../../configs/systemConfig";
 //[GET] /admin/accounts
 export const index = async (req: Request, res: Response) => {
     try {
-        const accounts = await sequelize.query(
-            `
-                SELECT admins.first_name, admins.last_name, admins.image_url, admins.phone, admins.email FROM 
-                admins join credentials on admins.credential_id = credentials.credential_id
-                    where credentials.is_enabled != 0
-            `, {
-                raw: true,
-                type: QueryTypes.SELECT,
-          });
+        const find = {
+            deleted: false
+        }
+
+        if (req.query["first_name"]) {
+            find["first_name"] = Sequelize.where(
+                Sequelize.fn('LOWER', Sequelize.col('first_name')),
+                {
+                    [Op.like]: '%' + (req.query["first_name"] as string).toLowerCase() + '%'
+                }
+            );
+        }
+
+        if (req.query["last_name"]) {
+            find["last_name"] = Sequelize.where(
+                Sequelize.fn('LOWER', Sequelize.col('last_name')),
+                {
+                    [Op.like]: '%' + (req.query["last_name"] as string).toLowerCase() + '%'
+                }
+            );
+        }
+
+        if (req.query["email"]) {
+            find["email"] = {
+                [Op.like]: '%' + (req.query["email"] as string) + '%'
+            }
+        }
+
+        if (req.query["phone"]) {
+            find["phone"] = {
+                [Op.like]: '%' + (req.query["phone"] as string) + '%'
+            }
+        }
+
+        const accounts = await Admin.findAll({
+            where: find,
+            attributes: {exclude: ['createdAt', 'updatedAt']},
+            raw: true
+        });
+
+        for (const account of accounts) {
+            const infoCredential = await Credential.findOne({
+                where: {
+                    credential_id: account["credential_id"],
+                },
+                raw: true
+            });
+            account["username"] = infoCredential["username"];
+        }
 
         return res.json({
             code: 200,
@@ -32,6 +72,97 @@ export const index = async (req: Request, res: Response) => {
         return res.json({
             code: 500,
             message: "Lỗi lấy danh sách roles" +error
+        });
+    }
+}
+
+//[GET] /admin/accounts/detail/
+export const detail = async (req: Request, res: Response) => {
+    try {
+        
+        const admin = res.locals.admin;
+
+        console.log(admin);
+
+        const data = admin;
+
+        const credential =await Credential.findOne({
+            where: {
+                credential_id: admin["credential_id"]
+            },
+            attributes: {exclude: ['password', 'createdAt', 'updatedAt']},
+            raw: true
+        });
+
+        console.log(credential);
+
+        const role = await Role.findOne({
+            where: {
+                role_id: credential["role_id"],
+            },
+            raw: true
+        });
+
+        data["username"] = credential["username"];
+        data["role"] = role["title"];
+        data["user_id"] = admin["admin_id"];
+
+        return res.json({
+            code: 200,
+            message: "Lấy tài khoản thành công",
+            data: data
+        });
+    } catch (error) {
+        return res.json({
+            code: 500,
+            message: "Lỗi lấy tài khoản " +error
+        });
+    }
+}
+
+//[PATCH] /admin/accounts/edit
+export const editAccountPost = async (req: Request, res: Response) => {
+    try {
+        const admin = res.locals.admin;
+        
+        await Admin.update({
+            ...req.body
+        }, {
+            where: {
+                admin_id: admin["admin_id"]
+            }
+        });
+
+        // const credential =await Credential.findOne({
+        //     where: {
+        //         credential_id: admin["credential_id"]
+        //     },
+        //     attributes: {exclude: ['password', 'createdAt', 'updatedAt']},
+        //     raw: true
+        // });
+
+        // const role_id = credential["role_id"];
+
+        // const role_id_form = req.body["role_id"];
+        // if(role_id != role_id_form)
+        // {
+        //     await Credential.update({
+        //         role_id: role_id_form
+        //     }, {
+        //         where:{
+        //             credential_id: admin["credential_id"]
+        //         }
+        //     })
+        // }
+
+        return res.json({
+            code: 200,
+            message: "Cập nhật tài khoản thành công"
+        });
+    } catch (error) {
+        return res.json({
+            code: 500,
+            message: "Lỗi cập nhật tài khoản " +error
         });
     }
 }
@@ -129,7 +260,10 @@ export const login = async (req: Request, res: Response) => {
     try {
         const credential = await Credential.findOne({
             where: {
-                username: username
+                username: username,
+                role_id: {
+                    [Op.ne]: 12
+                }
             },
             raw: true
         });
@@ -155,14 +289,20 @@ export const login = async (req: Request, res: Response) => {
             });
         }
 
+        console.log(credential);
+
+        const role = await Role.findOne({
+            where: {
+                role_id: credential['role_id']
+            },
+            raw: true
+        })
+
         // Tạo access token
-        const accessToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '24h' });
+        const accessToken = jwt.sign({ credential_id: credential["credential_id"], role: role['title']}, process.env.SECRET_KEY, { expiresIn: '24h' });
 
         // Tạo refresh token
-        const refreshToken = jwt.sign({ credential_id: credential["credential_id"] }, process.env.SECRET_KEY, { expiresIn: '7d' });
-
-
-        const token = jwt.sign({ credential_id: credential["credential_id"]}, process.env.SECRET_KEY, { expiresIn: '12h' });
+        const refreshToken = jwt.sign({ credential_id: credential["credential_id"], role: role['title']}, process.env.SECRET_KEY, { expiresIn: '7d' });
 
         // lưu token lại
         const verifycation_data = {
@@ -203,7 +343,7 @@ export const login = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({ 
             code: "400",
-            message: 'Error ( login ): ', 
+            message: 'Error ( login ): ' + error, 
         });
     }
 }
@@ -404,6 +544,81 @@ export const resetPassword = async (req: Request, res: Response) => {
         return res.json({ 
             code: 400,
             message: "Error in reset password."
+        });
+    }
+}
+
+//[POST] /admin/account/reset-defautl-password
+export const resetDefaultPassword = async (req: Request, res: Response) => {
+    try {
+        
+        const adminId = req.params["admin_id"];
+
+        const defaultPassword = await bcrypt.hash("123", 10);
+
+        const admin = await Admin.findOne({
+            where: {
+                admin_id: adminId
+            },
+            raw: true
+        })
+
+        await Credential.update({
+            password: defaultPassword
+        }, {
+            where: {
+                credential_id: admin["credential_id"]
+            }
+        })
+        
+        return res.json({
+            code: 200,
+            message: "Reset default password successfully"
+        })
+    } catch (error) {
+        return res.json({ 
+            code: 400,
+            message: "Error Reset default password " + error
+        });
+    }
+}
+
+//[delete] /admin/accounts/delete/:admin_id
+export const deleteAccount = async (req: Request, res: Response) => {
+    try {
+        
+        const adminId = req.params["admin_id"];
+
+        const admin = await Admin.findOne({
+            where: {
+                admin_id: adminId
+            },
+            raw: true
+        })
+
+        await Credential.update({
+            deleted: 1
+        }, {
+            where: {
+                credential_id: admin["credential_id"]
+            }
+        })
+        await Admin.update({
+            deleted: 1
+        }, {
+            where: {
+                admin_id: adminId
+            }
+        })
+        
+        return res.json({
+            code: 200,
+            message: "Deleted account successfully"
+        })
+    } catch (error) {
+        return res.json({ 
+            code: 400,
+            message: "Error Deleted account " + error
         });
     }
 }

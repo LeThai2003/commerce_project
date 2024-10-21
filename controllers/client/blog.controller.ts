@@ -12,6 +12,7 @@ import sequelize from "../../configs/database";
 import Comment from "../../models/comment.model";
 import jwt from "jsonwebtoken";
 import Blog from "../../models/blog.model";
+import { paginationHelper } from "../../helpers/pagination.helper";
 
 
 //[POST] /comment/:productId
@@ -47,7 +48,7 @@ export const postComment = async (req: Request, res: Response) => {
 export const listBlog = async (req: Request, res: Response) => {
     try {
 
-       const blogsList = await Blog.findAll({
+        const blogsList = await Blog.findAll({
             where: {
                 deleted: false
             },
@@ -57,10 +58,17 @@ export const listBlog = async (req: Request, res: Response) => {
 
        console.log(blogsList);
 
+        const objectPagination = paginationHelper(req, blogsList.length);
+
+        const paginatedBlogs = blogsList.slice(objectPagination["offset"], objectPagination["offset"] + objectPagination["limit"]);
+        
+
         return res.json({
             code: 200,
             message: "Lấy danh sách blogs thành công",
-            data: blogsList
+            data: paginatedBlogs,
+            totalPage: objectPagination["totalPage"],
+            pageNow: objectPagination["page"]
         })
     } catch (error) {
         return res.json({

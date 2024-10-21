@@ -9,9 +9,11 @@ router.get("/", controller.index);
 
 router.get("/:productId", controller.detail);
 
-router.patch("/like/:type/:productId",verifyToken, controller.like);
+router.patch("/like/:productId",verifyToken, controller.like);
 
 router.get("/list/favorite", verifyToken, controller.wishlist);
+
+router.get("/list/top-sold", controller.topSold);
 
 router.delete("/delete/favorite/:productId", verifyToken, controller.deleteFavoriteProduct);
 
